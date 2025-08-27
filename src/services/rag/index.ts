@@ -11,4 +11,13 @@ export { RAGErrorHandler, ragErrorHandler } from './ErrorHandler';
 export { RAGRecoveryManager, ragRecoveryManager } from './RecoveryManager';
 export { PartialProcessor, createPartialProcessor } from './PartialProcessor';
 export { RAGExample } from './example';
+
+// Performance optimization components
+export { BackgroundProcessor } from './BackgroundProcessor';
+export { MemoryManager } from './MemoryManager';
+export { DatabaseIndexer } from './DatabaseIndexer';
+export { LazyLoader } from './LazyLoader';
+export { ProcessingController } from './ProcessingController';
+export { PerformanceOptimizer } from './PerformanceOptimizer';
+
 export * from './types';
