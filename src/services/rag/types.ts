@@ -169,3 +169,82 @@ export enum EmbeddingErrorCodes {
   CANCELLED = 'CANCELLED',
   BATCH_SIZE_EXCEEDED = 'BATCH_SIZE_EXCEEDED'
 }
+
+// Similarity search and retrieval types
+export interface SearchQuery {
+  text: string;
+  embedding?: number[];
+  maxResults: number;
+  minSimilarity: number;
+  documentIds?: string[];
+}
+
+export interface SearchResult {
+  chunkId: string;
+  documentId: string;
+  documentName: string;
+  text: string;
+  pageNumber: number;
+  chunkIndex: number;
+  similarity: number;
+  startChar: number;
+  endChar: number;
+  tokenCount: number;
+}
+
+export interface RetrievalContext {
+  query: string;
+  results: SearchResult[];
+  totalChunks: number;
+  processingTime: number;
+  averageSimilarity: number;
+  maxSimilarity: number;
+  minSimilarity: number;
+}
+
+export interface SimilaritySearchConfig {
+  maxResults: number;
+  minSimilarity: number;
+  enableRanking: boolean;
+  rankingWeights: {
+    similarity: number;
+    recency: number;
+    tokenCount: number;
+  };
+}
+
+export interface ContextAssemblyConfig {
+  maxTokens: number;
+  preserveOrder: boolean;
+  addSeparators: boolean;
+  includeMetadata: boolean;
+  deduplicateContent: boolean;
+}
+
+export interface AssembledContext {
+  text: string;
+  sources: SearchResult[];
+  totalTokens: number;
+  truncated: boolean;
+  assemblyTime: number;
+}
+
+export class SimilaritySearchError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public originalError?: Error
+  ) {
+    super(message);
+    this.name = 'SimilaritySearchError';
+  }
+}
+
+export enum SimilaritySearchErrorCodes {
+  INVALID_QUERY = 'INVALID_QUERY',
+  NO_EMBEDDINGS = 'NO_EMBEDDINGS',
+  DATABASE_ERROR = 'DATABASE_ERROR',
+  PROCESSING_FAILED = 'PROCESSING_FAILED',
+  INVALID_SIMILARITY_THRESHOLD = 'INVALID_SIMILARITY_THRESHOLD',
+  NO_RESULTS_FOUND = 'NO_RESULTS_FOUND'
+}
