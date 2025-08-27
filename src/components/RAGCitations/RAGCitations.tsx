@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {View, TouchableOpacity, ScrollView, Animated} from 'react-native';
 import {Text, Card, Chip, IconButton, Divider} from 'react-native-paper';
 import {observer} from 'mobx-react';
@@ -7,6 +7,7 @@ import {useTheme} from '../../hooks';
 import {createStyles} from './styles';
 import {MessageType} from '../../utils/types';
 import {citationManager} from '../../services/rag/CitationManager';
+import {RAGLoadingIndicator} from '../RAGLoadingIndicator/RAGLoadingIndicator';
 
 export interface RAGCitationsProps {
   citations: MessageType.RAGCitation[];
@@ -14,6 +15,8 @@ export interface RAGCitationsProps {
   onViewSourceExcerpt?: (citation: MessageType.RAGCitation) => void;
   showStats?: boolean;
   maxVisible?: number;
+  isLoading?: boolean;
+  loadingMessage?: string;
 }
 
 export const RAGCitations: React.FC<RAGCitationsProps> = observer(
@@ -22,13 +25,40 @@ export const RAGCitations: React.FC<RAGCitationsProps> = observer(
     onViewDocument, 
     onViewSourceExcerpt,
     showStats = false,
-    maxVisible = 3
+    maxVisible = 3,
+    isLoading = false,
+    loadingMessage = 'Loading citations...'
   }) => {
     const theme = useTheme();
     const styles = createStyles({theme});
     const [expandedCitation, setExpandedCitation] = useState<string | null>(null);
     const [showAllCitations, setShowAllCitations] = useState(false);
     const [animatedHeight] = useState(new Animated.Value(0));
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }, [fadeAnim]);
+
+    if (isLoading) {
+      return (
+        <View style={styles.container}>
+          <RAGLoadingIndicator
+            loadingState={{
+              stage: 'searching',
+              progress: 0,
+              message: loadingMessage,
+            }}
+            compact
+            showProgress={false}
+          />
+        </View>
+      );
+    }
 
     if (!citations || citations.length === 0) {
       return null;
@@ -63,7 +93,7 @@ export const RAGCitations: React.FC<RAGCitationsProps> = observer(
     };
 
     return (
-      <View style={styles.container}>
+      <Animated.View style={[styles.container, {opacity: fadeAnim}]}>
         <View style={styles.header}>
           <Text variant="labelMedium" style={styles.title}>
             Sources ({citations.length})
@@ -155,7 +185,7 @@ export const RAGCitations: React.FC<RAGCitationsProps> = observer(
             />
           </TouchableOpacity>
         )}
-      </View>
+      </Animated.View>
     );
   }
 );

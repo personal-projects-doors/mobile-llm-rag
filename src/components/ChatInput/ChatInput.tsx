@@ -25,6 +25,7 @@ import {
 } from '../../assets/icons';
 
 import {useTheme} from '../../hooks';
+import {RAGTooltip} from '../RAGTooltip';
 
 import {createStyles} from './styles';
 
@@ -96,6 +97,10 @@ export interface ChatInputAdditionalProps {
   isRAGEnabled?: boolean;
   /** Callback when RAG toggle is pressed */
   onRAGToggle?: (enabled: boolean) => void;
+  /** Whether to show RAG tooltip for first-time users */
+  showRAGTooltip?: boolean;
+  /** Callback when RAG tooltip is dismissed */
+  onRAGTooltipDismiss?: () => void;
 }
 
 export type ChatInputProps = ChatInputTopLevelProps & ChatInputAdditionalProps;
@@ -129,6 +134,8 @@ export const ChatInput = observer(
     showRAGToggle = false,
     isRAGEnabled = false,
     onRAGToggle,
+    showRAGTooltip = false,
+    onRAGTooltipDismiss,
   }: ChatInputProps) => {
     const l10n = React.useContext(L10nContext);
     const theme = useTheme();
@@ -156,6 +163,10 @@ export const ChatInput = observer(
     // State for image upload menu
     const [showImageUploadMenu, setShowImageUploadMenu] = React.useState(false);
     const isEditMode = chatSessionStore.isEditMode;
+    
+    // State for RAG tooltip
+    const [ragTooltipPosition, setRagTooltipPosition] = React.useState({x: 0, y: 0});
+    const ragToggleRef = React.useRef<TouchableOpacity>(null);
 
     const styles = createStyles({theme, isEditMode});
 
@@ -569,12 +580,24 @@ export const ChatInput = observer(
               {/* RAG Toggle Button */}
               {showRAGToggle && !isCameraActive && (
                 <TouchableOpacity
+                  ref={ragToggleRef}
                   style={[
                     styles.thinkingToggleLeft,
                     isRAGEnabled && {backgroundColor: onSurfaceColor},
                     {borderColor: onSurfaceColorVariant},
                   ]}
-                  onPress={() => onRAGToggle?.(!isRAGEnabled)}
+                  onPress={() => {
+                    onRAGToggle?.(!isRAGEnabled);
+                    // Calculate tooltip position when first enabling RAG
+                    if (!isRAGEnabled && showRAGTooltip) {
+                      ragToggleRef.current?.measure((x, y, width, height, pageX, pageY) => {
+                        setRagTooltipPosition({
+                          x: pageX + width / 2 - 140, // Center tooltip
+                          y: pageY - 10, // Position above button
+                        });
+                      });
+                    }
+                  }}
                   accessibilityLabel={
                     isRAGEnabled
                       ? 'Disable RAG mode'
@@ -637,6 +660,18 @@ export const ChatInput = observer(
             </View>
           </View>
         </View>
+        
+        {/* RAG Tooltip */}
+        <RAGTooltip
+          visible={showRAGTooltip && isRAGEnabled}
+          onDismiss={onRAGTooltipDismiss || (() => {})}
+          title="RAG Mode Enabled"
+          content="Your AI can now reference document content in responses. Select documents in RAG settings to get started."
+          position={ragTooltipPosition}
+          arrowDirection="down"
+          autoHide
+          autoHideDelay={4000}
+        />
       </View>
     );
   },

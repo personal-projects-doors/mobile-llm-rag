@@ -5,6 +5,8 @@ import {observer} from 'mobx-react';
 
 import {Sheet} from '../Sheet';
 import {RAGDocumentSelector, RAGDocument} from '../RAGDocumentSelector';
+import {RAGLoadingIndicator} from '../RAGLoadingIndicator';
+import {RAGTooltip} from '../RAGTooltip';
 import {useTheme} from '../../hooks';
 import {ragStore} from '../../store';
 import {createStyles} from './styles';
@@ -19,6 +21,7 @@ export interface RAGSettingsSheetProps {
   availableDocuments: RAGDocument[];
   isLoading?: boolean;
   onOpenAdvancedSettings?: () => void;
+  processingState?: any;
 }
 
 export const RAGSettingsSheet: React.FC<RAGSettingsSheetProps> = observer(
@@ -32,6 +35,7 @@ export const RAGSettingsSheet: React.FC<RAGSettingsSheetProps> = observer(
     availableDocuments,
     isLoading = false,
     onOpenAdvancedSettings,
+    processingState,
   }) => {
     const theme = useTheme();
     const styles = createStyles({theme});
@@ -97,11 +101,22 @@ export const RAGSettingsSheet: React.FC<RAGSettingsSheetProps> = observer(
               />
             </View>
 
-            {!canEnableRAG && (
+            {!canEnableRAG && !processingState && (
               <View style={styles.warningContainer}>
                 <Text variant="bodySmall" style={styles.warningText}>
                   No processed documents available. Add and process PDF documents to enable RAG.
                 </Text>
+              </View>
+            )}
+
+            {/* Processing State */}
+            {processingState && (
+              <View style={styles.processingContainer}>
+                <RAGLoadingIndicator
+                  loadingState={processingState}
+                  showProgress={true}
+                  compact={false}
+                />
               </View>
             )}
 

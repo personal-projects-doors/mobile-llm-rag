@@ -14,6 +14,9 @@ export const createStyles = ({theme}: StyleProps) =>
       backgroundColor: theme.colors.primaryContainer,
       height: 28,
     },
+    chipProcessing: {
+      backgroundColor: theme.colors.tertiaryContainer,
+    },
     chipText: {
       color: theme.colors.onPrimaryContainer,
       fontSize: 12,

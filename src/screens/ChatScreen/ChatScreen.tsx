@@ -2,11 +2,12 @@ import React, {useRef, ReactNode, useState, useEffect, useCallback} from 'react'
 
 import {observer} from 'mobx-react';
 
-import {Bubble, ChatView, ErrorSnackbar, RAGSettingsSheet, RAGStatusIndicator} from '../../components';
+import {Bubble, ChatView, ErrorSnackbar, RAGSettingsSheet, RAGStatusIndicator, RAGOnboarding, RAGLoadingIndicator} from '../../components';
 import {RAGDocument} from '../../components/RAGDocumentSelector';
 
 import {useChatSession} from '../../hooks';
 import {useRAGChatSession} from '../../hooks/useRAGChatSession';
+import {useRAGOnboarding} from '../../hooks/useRAGOnboarding';
 
 import {modelStore, chatSessionStore, palStore, uiStore} from '../../store';
 import {database} from '../../database';
@@ -50,6 +51,7 @@ export const ChatScreen: React.FC = observer(() => {
     useChatSession(currentMessageInfo, user, assistant);
 
   const {processMessageWithRAG} = useRAGChatSession();
+  const {onboardingCompleted, tooltipShown, markOnboardingCompleted, markTooltipShown} = useRAGOnboarding();
 
   // Enhanced send handler with RAG processing
   const handleSendPress = useCallback(
@@ -63,6 +65,9 @@ export const ChatScreen: React.FC = observer(() => {
   const [showRAGSettings, setShowRAGSettings] = useState(false);
   const [availableDocuments, setAvailableDocuments] = useState<RAGDocument[]>([]);
   const [ragProcessor, setRagProcessor] = useState<RAGMessageProcessor | null>(null);
+  const [showRAGOnboarding, setShowRAGOnboarding] = useState(false);
+  const [showRAGTooltip, setShowRAGTooltip] = useState(false);
+  const [ragProcessingState, setRagProcessingState] = useState<any>(null);
 
   // Check if multimodal is enabled
   const [multimodalEnabled, setMultimodalEnabled] = React.useState(false);
@@ -155,15 +160,43 @@ export const ChatScreen: React.FC = observer(() => {
 
   // RAG handlers
   const handleRAGToggle = () => {
-    setShowRAGSettings(true);
+    // Check if this is the first time user is accessing RAG
+    const isFirstTimeRAG = !onboardingCompleted && availableDocuments.length === 0;
+    
+    if (isFirstTimeRAG) {
+      setShowRAGOnboarding(true);
+    } else {
+      setShowRAGSettings(true);
+    }
   };
 
   const handleRAGEnabledChange = async (enabled: boolean) => {
     await chatSessionStore.setRagEnabled(enabled);
+    
+    // Show tooltip for first-time RAG enablement
+    if (enabled && !tooltipShown) {
+      setShowRAGTooltip(true);
+      markTooltipShown();
+    }
   };
 
   const handleDocumentSelectionChange = async (documentIds: string[]) => {
     await chatSessionStore.setRagDocumentIds(documentIds);
+  };
+
+  const handleRAGOnboardingDismiss = () => {
+    setShowRAGOnboarding(false);
+    markOnboardingCompleted();
+  };
+
+  const handleRAGOnboardingGetStarted = () => {
+    setShowRAGOnboarding(false);
+    setShowRAGSettings(true);
+    markOnboardingCompleted();
+  };
+
+  const handleRAGTooltipDismiss = () => {
+    setShowRAGTooltip(false);
   };
 
   // Get current RAG state
@@ -211,6 +244,8 @@ export const ChatScreen: React.FC = observer(() => {
           showRAGToggle: availableDocuments.length > 0,
           isRAGEnabled: ragEnabled && hasRAGDocuments,
           onRAGToggle: handleRAGToggle,
+          showRAGTooltip: showRAGTooltip,
+          onRAGTooltipDismiss: handleRAGTooltipDismiss,
         }}
         textInputProps={{
           editable: !!modelStore.context,
@@ -236,6 +271,12 @@ export const ChatScreen: React.FC = observer(() => {
         selectedDocumentIds={ragDocumentIds}
         onDocumentSelectionChange={handleDocumentSelectionChange}
         availableDocuments={availableDocuments}
+      />
+      
+      <RAGOnboarding
+        visible={showRAGOnboarding}
+        onDismiss={handleRAGOnboardingDismiss}
+        onGetStarted={handleRAGOnboardingGetStarted}
       />
     </>
   );

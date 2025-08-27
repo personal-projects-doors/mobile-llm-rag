@@ -58,6 +58,12 @@ export const createStyles = ({theme}: StyleProps) =>
       color: theme.colors.onErrorContainer,
       textAlign: 'center',
     },
+    processingContainer: {
+      margin: 16,
+      padding: 12,
+      backgroundColor: theme.colors.surfaceContainer,
+      borderRadius: 12,
+    },
     documentSection: {
       flex: 1,
       marginTop: 8,
