@@ -11,7 +11,7 @@ export class RAGPerformanceExample {
 
   constructor(database: Database) {
     this.database = database;
-    
+
     // Initialize the performance optimizer with custom configuration
     this.optimizer = new PerformanceOptimizer(database, {
       enableAutoOptimization: true,
@@ -33,7 +33,7 @@ export class RAGPerformanceExample {
       },
       databaseIndexer: {
         enableVectorIndex: true,
-        vectorDimensions: 384, // medgemma-4b-it-Q2_K_L dimensions
+        vectorDimensions: 2560, // medgemma-4b-it-IQ4_NL dimensions
         indexBatchSize: 100,
       },
       lazyLoader: {
@@ -76,15 +76,15 @@ export class RAGPerformanceExample {
 
       // 1. Extract text and create chunks (simulated)
       const chunks = await this.simulateDocumentProcessing(documentPath);
-      
+
       // 2. Add document to index using background processing
       await this.optimizer.addDocumentToIndex(documentId, chunks);
-      
+
       // 3. Generate embeddings using background processing
-      await this.optimizer.generateEmbeddings(chunks, 'medgemma-4b-it-Q2_K_L');
-      
+      await this.optimizer.generateEmbeddings(chunks, 'unsloth/medgemma-4b-it-GGUF/medgemma-4b-it-IQ4_NL.gguf');
+
       console.log(`Document ${documentId} processed successfully`);
-      
+
     } catch (error) {
       console.error(`Failed to process document ${documentId}:`, error);
       throw error;
@@ -98,7 +98,7 @@ export class RAGPerformanceExample {
     try {
       // 1. Generate query embedding (simulated)
       const queryEmbedding = await this.simulateEmbeddingGeneration(query);
-      
+
       // 2. Perform similarity search using optimized database indexer
       const databaseIndexer = this.optimizer.getDatabaseIndexer();
       const results = await databaseIndexer.searchSimilar(
@@ -106,10 +106,10 @@ export class RAGPerformanceExample {
         maxResults,
         0.7 // minimum similarity
       );
-      
+
       console.log(`Found ${results.length} similar documents for query: "${query}"`);
       return results;
-      
+
     } catch (error) {
       console.error('Search failed:', error);
       throw error;
@@ -122,17 +122,17 @@ export class RAGPerformanceExample {
   public async loadDocuments(startIndex: number = 0, count: number = 20): Promise<any[]> {
     try {
       // Create or get lazy loader for documents
-      const documentsLoader = this.optimizer.getLazyLoader('rag_documents') || 
-                             this.optimizer.createLazyLoader('rag_documents');
-      
+      const documentsLoader = this.optimizer.getLazyLoader('rag_documents') ||
+        this.optimizer.createLazyLoader('rag_documents');
+
       // Load documents with lazy loading
       const result = await documentsLoader.getItems(startIndex, count);
-      
+
       console.log(`Loaded ${result.items.length} documents (${startIndex}-${startIndex + count})`);
       console.log(`Total documents: ${result.totalCount}, Has more: ${result.hasMore}`);
-      
+
       return result.items;
-      
+
     } catch (error) {
       console.error('Failed to load documents:', error);
       throw error;
@@ -145,7 +145,7 @@ export class RAGPerformanceExample {
   public async optimizePerformance(): Promise<void> {
     try {
       console.log('Starting manual performance optimization...');
-      
+
       // Get current performance metrics
       const metrics = await this.optimizer.getPerformanceMetrics();
       console.log('Current Performance Metrics:', {
@@ -154,15 +154,15 @@ export class RAGPerformanceExample {
         database: `${metrics.database.totalVectors} vectors, ${metrics.database.averageQueryTime.toFixed(0)}ms avg query`,
         lazyLoading: `${metrics.lazyLoading.loadedPages} pages loaded`,
       });
-      
+
       // Perform optimization
       await this.optimizer.optimizePerformance();
-      
+
       // Get updated metrics
       const updatedMetrics = await this.optimizer.getPerformanceMetrics();
       console.log('Performance optimization completed');
       console.log('Updated Memory Usage:', `${updatedMetrics.memory.totalUsed.toFixed(1)}MB`);
-      
+
     } catch (error) {
       console.error('Performance optimization failed:', error);
       throw error;
@@ -191,7 +191,7 @@ export class RAGPerformanceExample {
   public getProcessingStats(): any {
     const processingController = this.optimizer.getProcessingController();
     const backgroundProcessor = this.optimizer.getBackgroundProcessor();
-    
+
     return {
       tasks: processingController.getStatistics(),
       background: backgroundProcessor.getState(),
@@ -209,11 +209,11 @@ export class RAGPerformanceExample {
   }
 
   // Simulation methods (in real implementation, these would use actual processors)
-  
+
   private async simulateDocumentProcessing(documentPath: string): Promise<any[]> {
     // Simulate PDF processing and chunking
     await new Promise(resolve => setTimeout(resolve, 100));
-    
+
     return [
       { id: 'chunk1', text: 'Sample chunk 1 from document', pageNumber: 1 },
       { id: 'chunk2', text: 'Sample chunk 2 from document', pageNumber: 1 },
@@ -224,7 +224,7 @@ export class RAGPerformanceExample {
   private async simulateEmbeddingGeneration(text: string): Promise<number[]> {
     // Simulate embedding generation
     await new Promise(resolve => setTimeout(resolve, 50));
-    
+
     // Return a mock embedding vector
     return new Array(384).fill(0).map(() => Math.random() - 0.5);
   }
@@ -235,27 +235,27 @@ export class RAGPerformanceExample {
  */
 export async function demonstrateRAGPerformance(database: Database): Promise<void> {
   const ragExample = new RAGPerformanceExample(database);
-  
+
   try {
     // Process some documents
     await ragExample.processDocument('/path/to/doc1.pdf', 'doc1');
     await ragExample.processDocument('/path/to/doc2.pdf', 'doc2');
-    
+
     // Perform searches
     const results = await ragExample.searchDocuments('medical anatomy');
     console.log('Search results:', results.length);
-    
+
     // Load documents with lazy loading
     const documents = await ragExample.loadDocuments(0, 10);
     console.log('Loaded documents:', documents.length);
-    
+
     // Monitor performance
     await ragExample.optimizePerformance();
-    
+
     // Get statistics
     const stats = ragExample.getProcessingStats();
     console.log('Processing statistics:', stats);
-    
+
   } finally {
     // Clean shutdown
     await ragExample.shutdown();

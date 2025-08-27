@@ -6,9 +6,9 @@ import {modelStore} from '../store';
  */
 export const MEDGEMMA_MODEL_CONFIG = {
   id: 'unsloth/medgemma-4b-it-GGUF/medgemma-4b-it-IQ4_NL.gguf',
-  expectedSize: 2400000000, // ~2.4GB
+  expectedSize: 2800000000, // ~2.8GB (IQ4_NL is larger than Q2_K_L)
   requiredCapabilities: ['questionAnswering'],
-  embeddingDimensions: 4096,
+  embeddingDimensions: 2560,
   maxTokens: 512,
   batchSize: 5, // Conservative for mobile devices
 };

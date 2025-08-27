@@ -128,6 +128,54 @@ const DevToolsHomeScreen: React.FC = () => {
           </Card.Content>
         </Card>
 
+        {/* MedGemma RAG Test Card */}
+        <Card elevation={1} style={styles.card}>
+          <Card.Title title="MedGemma RAG Test" />
+          <Card.Content>
+            <Text variant="bodyMedium" style={styles.description}>
+              Download and test the MedGemma embedding model for RAG functionality.
+              This will automatically download the model if needed and test embedding generation.
+            </Text>
+            <View style={styles.buttonContainer}>
+              <Button
+                mode="contained"
+                onPress={async () => {
+                  try {
+                    // Import the test function
+                    const { testMedGemmaEmbedding } = await import('../../store/RAGStore');
+                    
+                    Alert.alert(
+                      'Testing MedGemma',
+                      'Starting MedGemma model download and test. Check the console for progress.',
+                    );
+                    
+                    const result = await testMedGemmaEmbedding();
+                    
+                    if (result.success) {
+                      Alert.alert(
+                        'Success!',
+                        `MedGemma RAG test passed!\n\nEmbedding dimensions: ${result.details?.embeddingDimensions}\nProcessing time: ${result.details?.processingTime}ms`,
+                      );
+                    } else {
+                      Alert.alert(
+                        'Test Failed',
+                        `MedGemma RAG test failed:\n${result.message}`,
+                      );
+                    }
+                  } catch (error) {
+                    Alert.alert(
+                      'Error',
+                      `Failed to test MedGemma: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                    );
+                  }
+                }}
+                style={styles.button}>
+                Test MedGemma RAG
+              </Button>
+            </View>
+          </Card.Content>
+        </Card>
+
         {/* Database Migration Card */}
         <Card elevation={1} style={styles.card}>
           <Card.Title title="Database Migration" />

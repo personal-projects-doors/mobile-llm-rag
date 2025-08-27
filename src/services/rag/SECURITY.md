@@ -87,7 +87,7 @@ const encryptedEmbedding = securityManager.encryptEmbedding(embeddingVector);
 All RAG operations are guaranteed to be on-device:
 
 - **PDF Processing**: Text extraction happens locally using react-native-pdf
-- **Embedding Generation**: Uses local medgemma-4b-it-Q2_K_L model
+- **Embedding Generation**: Uses local medgemma-4b-it-IQ4_NL model
 - **Similarity Search**: All vector calculations performed locally
 - **Data Storage**: All data stored in local WatermelonDB database
 

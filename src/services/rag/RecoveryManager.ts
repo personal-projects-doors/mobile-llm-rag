@@ -192,7 +192,7 @@ export class RAGRecoveryManager {
   ): Promise<{ success: boolean; result?: T }> {
     try {
       // Check if medgemma model is available
-      const medgemmaModel = modelStore.models.find(m => m.id === 'medgemma-4b-it-Q2_K_L');
+      const medgemmaModel = modelStore.models.find(m => m.id === 'unsloth/medgemma-4b-it-GGUF/medgemma-4b-it-IQ4_NL.gguf');
       
       if (!medgemmaModel) {
         console.log('medgemma model not found, cannot recover');

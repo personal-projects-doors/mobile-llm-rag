@@ -1,14 +1,23 @@
 import {Database} from '@nozbe/watermelondb';
 import SQLiteAdapter from '@nozbe/watermelondb/adapters/sqlite';
+import {Platform} from 'react-native';
 import schema from './schema';
 import migrations from './migrations';
-import {ChatSession, Message, CompletionSetting, GlobalSetting} from './models';
+import {
+  ChatSession,
+  Message,
+  CompletionSetting,
+  GlobalSetting,
+  RAGDocument,
+  RAGChunk,
+  RAGSettings,
+} from './models';
 
 const adapter = new SQLiteAdapter({
   schema,
   migrations,
   dbName: 'pocketpalai',
-  jsi: true, // enable JSI for better performance if available
+  jsi: Platform.OS === 'ios', // Enable JSI for better performance on iOS
   onSetUpError: error => {
     console.error('Database setup error:', error);
   },
@@ -16,7 +25,23 @@ const adapter = new SQLiteAdapter({
 
 export const database = new Database({
   adapter,
-  modelClasses: [ChatSession, Message, CompletionSetting, GlobalSetting],
+  modelClasses: [
+    ChatSession,
+    Message,
+    CompletionSetting,
+    GlobalSetting,
+    RAGDocument,
+    RAGChunk,
+    RAGSettings,
+  ],
 });
 
-export {ChatSession, Message, CompletionSetting, GlobalSetting};
+export {
+  ChatSession,
+  Message,
+  CompletionSetting,
+  GlobalSetting,
+  RAGDocument,
+  RAGChunk,
+  RAGSettings,
+};

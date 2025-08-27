@@ -58,7 +58,7 @@ export class DatabaseIndexer {
     this.database = database;
     this.config = {
       enableVectorIndex: true,
-      vectorDimensions: 384, // Default for medgemma-4b-it-Q2_K_L
+      vectorDimensions: 2560, // Default for medgemma-4b-it-IQ4_NL
       indexBatchSize: 100,
       maxIndexSize: 200, // 200MB
       rebuildThreshold: 0.1, // 10% changes

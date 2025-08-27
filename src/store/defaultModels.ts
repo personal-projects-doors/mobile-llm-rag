@@ -16,8 +16,8 @@ const crossPlatformModels: Model[] = [
     author: 'unsloth',
     name: 'MedGemma-4B-IT (IQ4_NL)',
     type: 'Gemma',
-    capabilities: ['questionAnswering'],
-    size: 2400000000, // Approximate size for IQ4_NL quantization
+    capabilities: ['questionAnswering', 'medical'],
+    size: 2800000000, // Updated size for IQ4_NL quantization (~2.8GB)
     params: 4000000000, // 4B parameters
     isDownloaded: false,
     downloadUrl:
@@ -31,14 +31,14 @@ const crossPlatformModels: Model[] = [
     chatTemplate: chatTemplates.gemmaIt,
     defaultCompletionSettings: {
       ...defaultCompletionParams,
-      n_predict: 256, // Shorter for embedding generation
-      temperature: 0.0, // Deterministic for embeddings
+      n_predict: 512, // Increased for better RAG responses
+      temperature: 0.1, // Low temperature for consistent embeddings
       penalty_repeat: 1.0,
     },
     completionSettings: {
       ...defaultCompletionParams,
-      n_predict: 256,
-      temperature: 0.0,
+      n_predict: 512,
+      temperature: 0.1,
       penalty_repeat: 1.0,
     },
     defaultStopWords: ['<end_of_turn>'],
@@ -46,11 +46,11 @@ const crossPlatformModels: Model[] = [
     hfModelFile: {
       rfilename: 'medgemma-4b-it-IQ4_NL.gguf',
       url: 'https://huggingface.co/unsloth/medgemma-4b-it-GGUF/resolve/main/medgemma-4b-it-IQ4_NL.gguf',
-      size: 2400000000,
+      size: 2800000000,
       oid: 'placeholder_oid_for_medgemma',
       lfs: {
         oid: 'placeholder_lfs_oid_for_medgemma',
-        size: 2400000000,
+        size: 2800000000,
         pointerSize: 135,
       },
       canFitInStorage: true,

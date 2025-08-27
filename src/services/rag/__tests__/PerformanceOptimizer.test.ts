@@ -174,7 +174,7 @@ describe('PerformanceOptimizer', () => {
       ];
 
       // This would normally be a longer operation
-      const generatePromise = optimizer.generateEmbeddings(chunks, 'medgemma-4b-it-Q2_K_L');
+      const generatePromise = optimizer.generateEmbeddings(chunks, 'unsloth/medgemma-4b-it-GGUF/medgemma-4b-it-IQ4_NL.gguf');
 
       // The promise should resolve (though it may timeout in test environment)
       await expect(generatePromise).rejects.toThrow('Embedding generation timeout');

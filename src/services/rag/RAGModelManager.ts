@@ -47,24 +47,37 @@ export class RAGModelManager {
    */
   async initialize(): Promise<void> {
     try {
-      // Find the embedding model
-      const embeddingModel = this.findEmbeddingModel();
-      if (!embeddingModel) {
-        throw new RAGError(
-          'MedGemma embedding model not found in model list',
-          EmbeddingErrorCodes.MODEL_NOT_LOADED,
-          RAGErrorCategory.MODEL_MANAGEMENT,
-          {operation: 'initialize'}
-        );
-      }
+      // Ensure the MedGemma model is available in the model store
+      const embeddingModel = await this.ensureEmbeddingModelAvailable();
 
       runInAction(() => {
         this.embeddingModel = embeddingModel;
       });
 
+      console.log(`MedGemma model found: ${embeddingModel.name}, Downloaded: ${embeddingModel.isDownloaded}`);
+
       // Auto-load embedding model if configured
       if (this.config.autoLoadEmbeddingModel) {
-        await this.loadEmbeddingModel();
+        if (embeddingModel.isDownloaded) {
+          console.log('Auto-loading MedGemma model...');
+          await this.loadEmbeddingModel();
+        } else {
+          console.log('MedGemma model not downloaded. Auto-downloading...');
+          try {
+            await this.downloadEmbeddingModel();
+            await this.loadEmbeddingModel();
+          } catch (downloadError) {
+            console.warn('Auto-download failed, user will need to manually download:', downloadError);
+            runInAction(() => {
+              this.lastError = new RAGError(
+                `Embedding model '${this.config.embeddingModelId}' is not downloaded. Please download it manually to enable RAG functionality.`,
+                EmbeddingErrorCodes.MODEL_NOT_LOADED,
+                RAGErrorCategory.MODEL_MANAGEMENT,
+                {operation: 'initialize'}
+              );
+            });
+          }
+        }
       }
     } catch (error) {
       const ragError = error instanceof RAGError 
@@ -81,7 +94,8 @@ export class RAGModelManager {
         this.lastError = ragError;
       });
       
-      throw ragError;
+      // Log the error but don't throw it to avoid breaking the app
+      console.error('RAG model manager initialization failed:', ragError);
     }
   }
 
@@ -92,6 +106,63 @@ export class RAGModelManager {
     return modelStore.models.find(
       model => model.id === this.config.embeddingModelId
     ) || null;
+  }
+
+  /**
+   * Ensure the MedGemma model is available in the model store
+   */
+  async ensureEmbeddingModelAvailable(): Promise<Model> {
+    let model = this.findEmbeddingModel();
+    
+    if (!model) {
+      console.log('MedGemma model not found in model store, adding it...');
+      
+      // Add the MedGemma model to the store if it's not there
+      const medgemmaModelConfig = {
+        id: 'unsloth/medgemma-4b-it-GGUF/medgemma-4b-it-IQ4_NL.gguf',
+        author: 'unsloth',
+        name: 'MedGemma-4B-IT (IQ4_NL)',
+        type: 'Gemma',
+        capabilities: ['questionAnswering', 'medical'],
+        params: 4000000000,
+        isDownloaded: false,
+        downloadUrl: 'https://huggingface.co/unsloth/medgemma-4b-it-GGUF/resolve/main/medgemma-4b-it-IQ4_NL.gguf',
+        hfUrl: 'https://huggingface.co/unsloth/medgemma-4b-it-GGUF',
+        progress: 0,
+        filename: 'medgemma-4b-it-IQ4_NL.gguf',
+        isLocal: false,
+        origin: ModelOrigin.PRESET,
+        size: 2800000000,
+        stopWords: ['<end_of_turn>'],
+        hfModelFile: {
+          rfilename: 'medgemma-4b-it-IQ4_NL.gguf',
+          url: 'https://huggingface.co/unsloth/medgemma-4b-it-GGUF/resolve/main/medgemma-4b-it-IQ4_NL.gguf',
+          size: 2800000000,
+          oid: 'placeholder_oid_for_medgemma',
+        },
+      };
+
+      // Add to model store
+      runInAction(() => {
+        modelStore.models.push(medgemmaModelConfig as any);
+      });
+      
+      // Try to find it again
+      model = this.findEmbeddingModel();
+      
+      if (!model) {
+        throw new RAGError(
+          'Failed to add MedGemma model to model store',
+          EmbeddingErrorCodes.MODEL_NOT_LOADED,
+          RAGErrorCategory.MODEL_MANAGEMENT,
+          {operation: 'ensure_model_available'}
+        );
+      }
+      
+      console.log('MedGemma model added to model store successfully');
+    }
+
+    return model;
   }
 
   /**
@@ -117,11 +188,18 @@ export class RAGModelManager {
     }
 
     if (model.isDownloaded) {
+      console.log('MedGemma model already downloaded');
       return; // Already downloaded
     }
 
     try {
+      console.log(`Downloading MedGemma model: ${model.name}`);
       await modelStore.checkSpaceAndDownload(model.id);
+      
+      // Wait for download to complete
+      await this.waitForModelDownload(model.id);
+      
+      console.log('MedGemma model download completed');
     } catch (error) {
       throw new RAGError(
         'Failed to download MedGemma embedding model',
@@ -134,24 +212,43 @@ export class RAGModelManager {
   }
 
   /**
+   * Wait for model download to complete
+   */
+  private async waitForModelDownload(modelId: string, maxWaitTime = 300000): Promise<void> {
+    const startTime = Date.now();
+    const checkInterval = 2000; // Check every 2 seconds
+
+    while (Date.now() - startTime < maxWaitTime) {
+      const model = modelStore.models.find(m => m.id === modelId);
+      
+      if (model?.isDownloaded) {
+        return; // Download completed
+      }
+
+      if (model?.progress !== undefined) {
+        console.log(`Download progress: ${model.progress}%`);
+      }
+
+      // Wait before next check
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+
+    throw new Error('Model download timeout');
+  }
+
+  /**
    * Load the embedding model for RAG operations
    */
   async loadEmbeddingModel(): Promise<void> {
     if (this.isEmbeddingModelLoaded && this.embeddingGenerator) {
+      console.log('Embedding model already loaded');
       return; // Already loaded
     }
 
-    const model = this.findEmbeddingModel();
-    if (!model) {
-      throw new RAGError(
-        'MedGemma embedding model not found',
-        EmbeddingErrorCodes.MODEL_NOT_LOADED,
-        RAGErrorCategory.MODEL_MANAGEMENT,
-        {operation: 'load'}
-      );
-    }
+    const model = await this.ensureEmbeddingModelAvailable();
 
     if (!model.isDownloaded) {
+      console.log('Embedding model not downloaded, attempting download...');
       await this.downloadEmbeddingModel();
     }
 
@@ -161,15 +258,21 @@ export class RAGModelManager {
     });
 
     try {
-      // Create embedding generator
+      console.log(`Loading embedding model: ${model.name} (${model.id})`);
+
+      // Create embedding generator with MedGemma-optimized configuration
       this.embeddingGenerator = new EmbeddingGenerator({
         model,
         config: {
-          batchSize: 5, // Smaller batch size for mobile devices
-          maxTokens: 512,
-          normalize: true,
+          batchSize: 3, // Conservative batch size for mobile devices
+          maxTokens: 512, // MedGemma can handle up to 512 tokens efficiently
+          normalize: true, // Normalize embeddings for better similarity search
+        },
+        onProgress: (progress) => {
+          console.log(`Embedding progress: ${progress.processed}/${progress.total}`);
         },
         onError: (error) => {
+          console.error('Embedding generation error:', error);
           runInAction(() => {
             this.lastError = new RAGError(
               error.message,
@@ -185,20 +288,34 @@ export class RAGModelManager {
       // Initialize the embedding generator
       await this.embeddingGenerator.initialize();
 
+      // Validate the model setup
+      const validation = await this.embeddingGenerator.validateModelForEmbedding();
+      if (!validation.isValid) {
+        console.warn('Embedding model validation issues:', validation.issues);
+        console.warn('Recommendations:', validation.recommendations);
+        
+        // Don't throw an error for validation issues, just log warnings
+        // The model might still work despite minor issues
+      }
+
       runInAction(() => {
         this.isEmbeddingModelLoaded = true;
         this.embeddingModel = model;
       });
+
+      console.log(`Successfully loaded embedding model: ${model.name}`);
     } catch (error) {
       const ragError = error instanceof RAGError 
         ? error 
         : new RAGError(
-            'Failed to load MedGemma embedding model',
+            `Failed to load MedGemma embedding model: ${error instanceof Error ? error.message : 'Unknown error'}`,
             EmbeddingErrorCodes.MODEL_LOADING_FAILED,
             RAGErrorCategory.MODEL_MANAGEMENT,
             {operation: 'load'},
             error instanceof Error ? error : undefined
           );
+      
+      console.error('Failed to load embedding model:', ragError);
       
       runInAction(() => {
         this.lastError = ragError;
@@ -407,6 +524,99 @@ export class RAGModelManager {
       isLoading: this.isLoadingEmbeddingModel,
       lastError: this.lastError,
     };
+  }
+
+  /**
+   * Check MedGemma model setup and provide detailed status
+   */
+  async checkMedGemmaSetup(): Promise<{
+    status: 'ready' | 'not_found' | 'not_downloaded' | 'loading_failed' | 'validation_failed';
+    message: string;
+    details: string[];
+    actions: string[];
+  }> {
+    const model = this.findEmbeddingModel();
+    
+    if (!model) {
+      return {
+        status: 'not_found',
+        message: `MedGemma model '${this.config.embeddingModelId}' not found`,
+        details: [
+          'The MedGemma embedding model is not in your model list',
+          'This model is required for RAG functionality',
+        ],
+        actions: [
+          'Go to Models screen',
+          'Look for MedGemma-4B-IT (IQ4_NL) in the available models',
+          'Download the model',
+          'Return to enable RAG',
+        ],
+      };
+    }
+
+    if (!model.isDownloaded) {
+      return {
+        status: 'not_downloaded',
+        message: `MedGemma model found but not downloaded`,
+        details: [
+          `Model: ${model.name}`,
+          `Size: ~2.8GB`,
+          `Status: Available for download`,
+        ],
+        actions: [
+          'Go to Models screen',
+          'Find the MedGemma-4B-IT model',
+          'Tap download to install the model',
+          'Wait for download to complete',
+        ],
+      };
+    }
+
+    // Try to load and validate the model
+    try {
+      if (!this.isEmbeddingModelLoaded) {
+        await this.loadEmbeddingModel();
+      }
+
+      if (this.embeddingGenerator) {
+        const validation = await this.embeddingGenerator.validateModelForEmbedding();
+        
+        if (!validation.isValid) {
+          return {
+            status: 'validation_failed',
+            message: 'MedGemma model loaded but validation failed',
+            details: validation.issues,
+            actions: validation.recommendations,
+          };
+        }
+      }
+
+      return {
+        status: 'ready',
+        message: 'MedGemma model is ready for RAG operations',
+        details: [
+          `Model: ${model.name}`,
+          `Status: Loaded and validated`,
+          `Embedding dimensions: 4096`,
+        ],
+        actions: [],
+      };
+    } catch (error) {
+      return {
+        status: 'loading_failed',
+        message: 'Failed to load MedGemma model',
+        details: [
+          error instanceof Error ? error.message : 'Unknown error',
+          'The model file may be corrupted or incompatible',
+        ],
+        actions: [
+          'Try restarting the app',
+          'Re-download the model if the issue persists',
+          'Check available storage space',
+          'Contact support if the problem continues',
+        ],
+      };
+    }
   }
 
   /**

@@ -12,7 +12,7 @@ jest.mock('../../../store', () => ({
   modelStore: {
     models: [
       {
-        id: 'medgemma-4b-it-Q2_K_L',
+        id: 'unsloth/medgemma-4b-it-GGUF/medgemma-4b-it-IQ4_NL.gguf',
         isLoaded: false,
       },
     ],
@@ -83,7 +83,7 @@ describe('RAGRecoveryManager', () => {
       expect(result.result).toBe('model_recovery_success');
       expect(result.recoveryAction).toBe('model_recovery');
       expect(result.shouldNotifyUser).toBe(true);
-      expect(modelStore.loadModel).toHaveBeenCalledWith('medgemma-4b-it-Q2_K_L');
+      expect(modelStore.loadModel).toHaveBeenCalledWith('unsloth/medgemma-4b-it-GGUF/medgemma-4b-it-IQ4_NL.gguf');
     });
 
     it('should use partial results when available', async () => {

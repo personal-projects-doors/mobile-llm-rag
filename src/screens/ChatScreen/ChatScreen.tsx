@@ -86,10 +86,10 @@ export const ChatScreen: React.FC = observer(() => {
     const initializeRAG = async () => {
       try {
         // Find the medgemma model
-        const medgemmaModel = modelStore.models.find(m => m.id === 'medgemma-4b-it-Q2_K_L');
+        const medgemmaModel = modelStore.models.find(m => m.id === 'unsloth/medgemma-4b-it-GGUF/medgemma-4b-it-IQ4_NL.gguf');
         
         if (!medgemmaModel) {
-          console.warn('medgemma-4b-it-Q2_K_L model not found for RAG');
+          console.warn('unsloth/medgemma-4b-it-GGUF/medgemma-4b-it-IQ4_NL.gguf model not found for RAG');
           return;
         }
 
