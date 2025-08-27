@@ -54,3 +54,6 @@ export * from './RAGDocumentSelector';
 export * from './RAGSettingsSheet';
 export * from './RAGCitations';
 export * from './RAGStatusIndicator';
+export * from './SourceExcerptViewer';
+export * from './DocumentViewer';
+export * from './DocumentViewerModal';

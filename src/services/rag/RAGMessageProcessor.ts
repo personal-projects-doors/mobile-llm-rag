@@ -1,6 +1,7 @@
 import {Database} from '@nozbe/watermelondb';
 import {RetrievalSystem} from './RetrievalSystem';
 import {EmbeddingGenerator} from './EmbeddingGenerator';
+import {CitationManager, citationManager} from './CitationManager';
 import {MessageType} from '../../utils/types';
 import {
   SearchResult,
@@ -26,11 +27,13 @@ export class RAGMessageProcessor {
   private database: Database;
   private retrievalSystem: RetrievalSystem;
   private embeddingGenerator: EmbeddingGenerator;
+  private citationManager: CitationManager;
 
   constructor(database: Database, embeddingGenerator: EmbeddingGenerator) {
     this.database = database;
     this.embeddingGenerator = embeddingGenerator;
     this.retrievalSystem = new RetrievalSystem(database, embeddingGenerator);
+    this.citationManager = citationManager;
   }
 
   /**
@@ -54,8 +57,8 @@ export class RAGMessageProcessor {
     // Create enhanced prompt with context
     const enhancedPrompt = this.createEnhancedPrompt(message, assembled);
 
-    // Convert search results to citations
-    const citations = this.createCitations(context.results);
+    // Convert search results to citations using CitationManager
+    const citations = this.citationManager.createCitations(context.results);
 
     return {
       enhancedPrompt,
@@ -88,18 +91,17 @@ Please cite specific information from the context when relevant.`;
   }
 
   /**
-   * Convert search results to citation format
+   * Get citation statistics for a set of results
    */
-  private createCitations(results: SearchResult[]): MessageType.RAGCitation[] {
-    return results.map(result => ({
-      documentId: result.documentId,
-      documentName: result.documentName,
-      pageNumber: result.pageNumber,
-      chunkText: result.text,
-      similarity: result.similarity,
-      startChar: result.startChar,
-      endChar: result.endChar,
-    }));
+  getCitationStats(citations: MessageType.RAGCitation[]) {
+    return this.citationManager.getCitationStats(citations);
+  }
+
+  /**
+   * Get expanded context for a citation
+   */
+  getCitationContext(citation: MessageType.RAGCitation) {
+    return this.citationManager.getCitationContext(citation);
   }
 
   /**

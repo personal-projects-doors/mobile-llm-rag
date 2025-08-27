@@ -21,6 +21,8 @@ import {useTheme} from '../../hooks';
 import {styles} from './styles';
 import {MarkdownView} from '../MarkdownView';
 import {RAGCitations} from '../RAGCitations';
+import {SourceExcerptViewer} from '../SourceExcerptViewer';
+import {DocumentViewerModal} from '../DocumentViewerModal';
 
 import {MessageType} from '../../utils/types';
 import {
@@ -63,6 +65,14 @@ export const TextMessage = ({
   const [selectedImageIndex, setSelectedImageIndex] = React.useState<
     number | null
   >(null);
+  const [selectedCitation, setSelectedCitation] = React.useState<MessageType.RAGCitation | null>(null);
+  const [documentViewerVisible, setDocumentViewerVisible] = React.useState(false);
+  const [documentViewerProps, setDocumentViewerProps] = React.useState<{
+    documentId: string;
+    documentName: string;
+    filePath: string;
+    initialPage: number;
+  } | null>(null);
 
   const {
     descriptionText,
@@ -251,9 +261,28 @@ export const TextMessage = ({
           {message.metadata?.citations && (
             <RAGCitations
               citations={message.metadata.citations}
-              onViewDocument={(documentId, pageNumber) => {
-                // TODO: Implement document viewer
-                console.log('View document:', documentId, 'page:', pageNumber);
+              showStats={true}
+              onViewDocument={async (documentId, pageNumber) => {
+                try {
+                  // Get document info from database
+                  // For now, we'll use placeholder values
+                  // In a real implementation, you'd fetch from the database
+                  const documentName = message.metadata.citations?.find(c => c.documentId === documentId)?.documentName || 'Document';
+                  const filePath = `file://path/to/${documentId}.pdf`; // This should come from database
+                  
+                  setDocumentViewerProps({
+                    documentId,
+                    documentName,
+                    filePath,
+                    initialPage: pageNumber,
+                  });
+                  setDocumentViewerVisible(true);
+                } catch (error) {
+                  console.error('Failed to open document:', error);
+                }
+              }}
+              onViewSourceExcerpt={(citation) => {
+                setSelectedCitation(citation);
               }}
             />
           )}
@@ -280,6 +309,53 @@ export const TextMessage = ({
 
       {/* Image preview modal */}
       {renderImagePreview()}
+
+      {/* Source excerpt modal */}
+      {selectedCitation && (
+        <Modal
+          visible={!!selectedCitation}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setSelectedCitation(null)}>
+          <View style={{
+            flex: 1,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}>
+            <SourceExcerptViewer
+              citation={selectedCitation}
+              onClose={() => setSelectedCitation(null)}
+              onViewDocument={(documentId, pageNumber) => {
+                setSelectedCitation(null);
+                // Trigger document viewer
+                const documentName = selectedCitation.documentName;
+                const filePath = `file://path/to/${documentId}.pdf`; // This should come from database
+                
+                setDocumentViewerProps({
+                  documentId,
+                  documentName,
+                  filePath,
+                  initialPage: pageNumber,
+                });
+                setDocumentViewerVisible(true);
+              }}
+            />
+          </View>
+        </Modal>
+      )}
+
+      {/* Document viewer modal */}
+      {documentViewerProps && (
+        <DocumentViewerModal
+          visible={documentViewerVisible}
+          onClose={() => {
+            setDocumentViewerVisible(false);
+            setDocumentViewerProps(null);
+          }}
+          {...documentViewerProps}
+        />
+      )}
     </>
   );
 };

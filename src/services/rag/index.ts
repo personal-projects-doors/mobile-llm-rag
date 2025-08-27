@@ -6,5 +6,6 @@ export { SimilaritySearch } from './SimilaritySearch';
 export { ContextAssembler } from './ContextAssembler';
 export { RetrievalSystem } from './RetrievalSystem';
 export { RAGMessageProcessor } from './RAGMessageProcessor';
+export { CitationManager, citationManager } from './CitationManager';
 export { RAGExample } from './example';
 export * from './types';
