@@ -55,3 +55,63 @@ export enum PDFErrorCodes {
   MEMORY_ERROR = 'MEMORY_ERROR',
   PERMISSION_DENIED = 'PERMISSION_DENIED'
 }
+
+// Chunking-related types
+export interface ChunkingConfig {
+  chunkSize: number;
+  overlap: number;
+  preserveSentences: boolean;
+  minChunkSize: number;
+  maxChunkSize: number;
+}
+
+export interface ChunkMetadata {
+  chunkIndex: number;
+  startChar: number;
+  endChar: number;
+  startToken: number;
+  endToken: number;
+  tokenCount: number;
+  pageNumber?: number;
+  sentenceCount: number;
+  hasCompleteSentences: boolean;
+}
+
+export interface DocumentChunk {
+  id: string;
+  text: string;
+  metadata: ChunkMetadata;
+}
+
+export interface ChunkingResult {
+  chunks: DocumentChunk[];
+  totalChunks: number;
+  totalTokens: number;
+  averageChunkSize: number;
+  processingTime: number;
+}
+
+export interface SentenceBoundary {
+  start: number;
+  end: number;
+  text: string;
+}
+
+export class ChunkingError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public originalError?: Error
+  ) {
+    super(message);
+    this.name = 'ChunkingError';
+  }
+}
+
+export enum ChunkingErrorCodes {
+  INVALID_CONFIG = 'INVALID_CONFIG',
+  EMPTY_TEXT = 'EMPTY_TEXT',
+  TEXT_TOO_LARGE = 'TEXT_TOO_LARGE',
+  PROCESSING_FAILED = 'PROCESSING_FAILED',
+  INVALID_BOUNDARIES = 'INVALID_BOUNDARIES'
+}
