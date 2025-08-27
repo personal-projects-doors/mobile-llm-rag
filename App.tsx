@@ -32,6 +32,7 @@ import {
 } from './src/components';
 import {
   ChatScreen,
+  DocumentManagerScreen,
   ModelsScreen,
   SettingsScreen,
   BenchmarkScreen,
@@ -96,6 +97,14 @@ const App = observer(() => {
                         headerRight: () => <ModelsHeaderRight />,
                         headerStyle: styles.headerWithoutDivider,
                         title: currentL10n.screenTitles.models,
+                      }}
+                    />
+                    <Drawer.Screen
+                      name={ROUTES.DOCUMENTS}
+                      component={gestureHandlerRootHOC(DocumentManagerScreen)}
+                      options={{
+                        headerStyle: styles.headerWithoutDivider,
+                        title: 'Documents',
                       }}
                     />
                     <Drawer.Screen

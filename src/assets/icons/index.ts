@@ -12,6 +12,7 @@ export {default as CloseIcon} from './close.svg';
 export {default as CopyIcon} from './copy.svg';
 export {default as CpuChipIcon} from './cpu-chip.svg';
 export {default as DownloadIcon} from './download.svg';
+export {default as DocumentIcon} from './document.svg';
 export {default as DotsVerticalIcon} from './dots-vertical.svg';
 export {default as DuplicateIcon} from './duplicate.svg';
 export {default as EditBoxIcon} from './edit-box.svg';

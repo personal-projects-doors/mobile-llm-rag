@@ -15,6 +15,7 @@ import {Menu, RenameModal} from '..';
 import {
   BenchmarkIcon,
   ChatIcon,
+  DocumentIcon,
   EditIcon,
   ModelIcon,
   PalIcon,
@@ -96,6 +97,12 @@ export const SidebarContent: React.FC<DrawerContentComponentProps> = observer(
                 label={l10n.components.sidebarContent.menuItems.models}
                 icon={() => <ModelIcon stroke={theme.colors.primary} />}
                 onPress={() => props.navigation.navigate(ROUTES.MODELS)}
+                style={styles.menuDrawerItem}
+              />
+              <Drawer.Item
+                label="Documents"
+                icon={() => <DocumentIcon stroke={theme.colors.primary} />}
+                onPress={() => props.navigation.navigate(ROUTES.DOCUMENTS)}
                 style={styles.menuDrawerItem}
               />
               <Drawer.Item
