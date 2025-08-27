@@ -7,5 +7,8 @@ export { ContextAssembler } from './ContextAssembler';
 export { RetrievalSystem } from './RetrievalSystem';
 export { RAGMessageProcessor } from './RAGMessageProcessor';
 export { CitationManager, citationManager } from './CitationManager';
+export { RAGErrorHandler, ragErrorHandler } from './ErrorHandler';
+export { RAGRecoveryManager, ragRecoveryManager } from './RecoveryManager';
+export { PartialProcessor, createPartialProcessor } from './PartialProcessor';
 export { RAGExample } from './example';
 export * from './types';

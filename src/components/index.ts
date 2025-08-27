@@ -51,6 +51,7 @@ export * from './VisionDownloadSheet';
 export * from './VisionControlSheet';
 export * from './PalHeaderRight';
 export * from './RAGDocumentSelector';
+export * from './RAGErrorDialog';
 export * from './RAGSettingsSheet';
 export * from './RAGCitations';
 export * from './RAGStatusIndicator';

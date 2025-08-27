@@ -2,11 +2,15 @@ import {Database} from '@nozbe/watermelondb';
 import {RetrievalSystem} from './RetrievalSystem';
 import {EmbeddingGenerator} from './EmbeddingGenerator';
 import {CitationManager, citationManager} from './CitationManager';
+import {ragErrorHandler} from './ErrorHandler';
+import {ragRecoveryManager} from './RecoveryManager';
 import {MessageType} from '../../utils/types';
 import {
   SearchResult,
   RetrievalContext,
   AssembledContext,
+  RAGError,
+  RAGErrorCategory,
 } from './types';
 
 export interface RAGProcessingOptions {
@@ -21,6 +25,9 @@ export interface RAGProcessingResult {
   citations: MessageType.RAGCitation[];
   retrievalContext: RetrievalContext;
   originalQuery: string;
+  fallbackUsed?: boolean;
+  partialResults?: boolean;
+  errorRecovered?: boolean;
 }
 
 export class RAGMessageProcessor {
@@ -43,29 +50,137 @@ export class RAGMessageProcessor {
     message: string,
     options?: RAGProcessingOptions
   ): Promise<RAGProcessingResult> {
-    // Retrieve relevant context
-    const {context, assembled} = await this.retrievalSystem.retrieveAndAssemble(
-      message,
-      {
-        maxResults: options?.maxResults || 5,
-        minSimilarity: options?.minSimilarity || 0.7,
-        documentIds: options?.documentIds,
-        maxTokens: options?.maxTokens || 2000,
-      }
-    );
-
-    // Create enhanced prompt with context
-    const enhancedPrompt = this.createEnhancedPrompt(message, assembled);
-
-    // Convert search results to citations using CitationManager
-    const citations = this.citationManager.createCitations(context.results);
-
-    return {
-      enhancedPrompt,
-      citations,
-      retrievalContext: context,
-      originalQuery: message,
+    const context = {
+      operation: 'process_message',
+      documentIds: options?.documentIds,
     };
+
+    try {
+      // Retrieve relevant context with error handling
+      const retrievalResult = await ragErrorHandler.handleError(
+        new Promise(async (resolve, reject) => {
+          try {
+            const result = await this.retrievalSystem.retrieveAndAssemble(
+              message,
+              {
+                maxResults: options?.maxResults || 5,
+                minSimilarity: options?.minSimilarity || 0.7,
+                documentIds: options?.documentIds,
+                maxTokens: options?.maxTokens || 2000,
+              }
+            );
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        }),
+        {
+          operation: 'retrieve_and_assemble',
+          fallbackAction: async () => {
+            // Fallback: return empty context for normal chat
+            return {
+              context: {
+                query: message,
+                results: [],
+                totalChunks: 0,
+                processingTime: 0,
+                averageSimilarity: 0,
+                maxSimilarity: 0,
+                minSimilarity: 0,
+              },
+              assembled: {
+                text: '',
+                sources: [],
+                totalTokens: 0,
+                truncated: false,
+                assemblyTime: 0,
+              },
+            };
+          },
+          retryAction: async () => {
+            return await this.retrievalSystem.retrieveAndAssemble(
+              message,
+              {
+                maxResults: Math.max(1, (options?.maxResults || 5) - 2), // Reduce results on retry
+                minSimilarity: Math.max(0.5, (options?.minSimilarity || 0.7) - 0.1), // Lower threshold on retry
+                documentIds: options?.documentIds,
+                maxTokens: options?.maxTokens || 2000,
+              }
+            );
+          },
+        }
+      );
+
+      if (!retrievalResult.success) {
+        throw retrievalResult.error || new Error('Retrieval failed');
+      }
+
+      const {context: retrievalContext, assembled} = retrievalResult.result!;
+      const fallbackUsed = retrievalResult.action === 'fallback';
+      const errorRecovered = retrievalResult.action === 'retry';
+
+      // Create enhanced prompt with context
+      const enhancedPrompt = this.createEnhancedPrompt(message, assembled);
+
+      // Convert search results to citations using CitationManager
+      let citations: MessageType.RAGCitation[] = [];
+      try {
+        citations = this.citationManager.createCitations(retrievalContext.results);
+      } catch (citationError) {
+        console.warn('Failed to create citations, continuing without them:', citationError);
+        // Continue without citations rather than failing completely
+      }
+
+      return {
+        enhancedPrompt,
+        citations,
+        retrievalContext,
+        originalQuery: message,
+        fallbackUsed,
+        errorRecovered,
+        partialResults: retrievalContext.results.length < (options?.maxResults || 5),
+      };
+
+    } catch (error) {
+      // Final fallback: use recovery manager for graceful degradation
+      const recoveryResult = await ragRecoveryManager.recoverFromError(
+        error instanceof RAGError ? error : new RAGError(
+          error instanceof Error ? error.message : 'Unknown error during message processing',
+          'MESSAGE_PROCESSING_FAILED',
+          RAGErrorCategory.MESSAGE_PROCESSING,
+          context,
+          error instanceof Error ? error : undefined
+        ),
+        context,
+        {
+          fallbackAction: async () => {
+            // Ultimate fallback: return original message for normal chat
+            return {
+              enhancedPrompt: message,
+              citations: [],
+              retrievalContext: {
+                query: message,
+                results: [],
+                totalChunks: 0,
+                processingTime: 0,
+                averageSimilarity: 0,
+                maxSimilarity: 0,
+                minSimilarity: 0,
+              },
+              originalQuery: message,
+              fallbackUsed: true,
+            };
+          },
+        }
+      );
+
+      if (recoveryResult.success && recoveryResult.result) {
+        return recoveryResult.result;
+      }
+
+      // If all recovery attempts fail, throw the original error
+      throw error;
+    }
   }
 
   /**
@@ -115,24 +230,31 @@ Please cite specific information from the context when relevant.`;
       return false;
     }
 
-    // Check if documents exist and have processed chunks
-    const documentsCollection = this.database.get('rag_documents');
-    
-    for (const docId of documentIds) {
-      try {
-        const document = await documentsCollection.find(docId);
-        const docData = document as any;
-        
-        if (!docData.isProcessed || docData.chunkCount === 0) {
+    try {
+      // Check if documents exist and have processed chunks
+      const documentsCollection = this.database.get('rag_documents');
+      
+      for (const docId of documentIds) {
+        try {
+          const document = await documentsCollection.find(docId);
+          const docData = document as any;
+          
+          if (!docData.isProcessed || docData.chunkCount === 0) {
+            return false;
+          }
+        } catch (error) {
+          // Document not found, log but continue checking others
+          console.warn(`Document ${docId} not found or inaccessible:`, error);
           return false;
         }
-      } catch (error) {
-        // Document not found
-        return false;
       }
-    }
 
-    return true;
+      return true;
+    } catch (error) {
+      // Database error - log and return false to fall back to normal chat
+      console.error('Error checking RAG availability:', error);
+      return false;
+    }
   }
 
   /**

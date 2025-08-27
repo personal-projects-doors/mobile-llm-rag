@@ -1,6 +1,6 @@
 import {useCallback} from 'react';
 import {database} from '../database';
-import {RAGMessageProcessor, EmbeddingGenerator} from '../services/rag';
+import {RAGMessageProcessor, EmbeddingGenerator, ragRecoveryManager} from '../services/rag';
 import {chatSessionStore, modelStore} from '../store';
 import {MessageType} from '../utils/types';
 
@@ -28,7 +28,8 @@ export const useRAGChatSession = () => {
   // Enhanced message processing with RAG
   const processMessageWithRAG = useCallback(async (
     message: MessageType.PartialText,
-    originalHandleSendPress: (message: MessageType.PartialText) => void
+    originalHandleSendPress: (message: MessageType.PartialText) => void,
+    onError?: (error: string, recoveryActions?: any[]) => void
   ) => {
     const ragEnabled = chatSessionStore.activeRagEnabled;
     const ragDocumentIds = chatSessionStore.activeRagDocumentIds;
@@ -40,11 +41,32 @@ export const useRAGChatSession = () => {
     }
 
     try {
-      // Create RAG processor
-      const ragProcessor = await createRAGProcessor();
+      // Create RAG processor with error handling
+      const ragProcessor = await ragRecoveryManager.recoverFromError(
+        new Error('Creating RAG processor'), // Placeholder error for recovery context
+        {
+          operation: 'create_rag_processor',
+          sessionId: chatSessionStore.activeSession?.id,
+        },
+        {
+          retryAction: createRAGProcessor,
+          fallbackAction: async () => {
+            // Fallback: use normal chat
+            originalHandleSendPress(message);
+            return null;
+          },
+        }
+      );
+
+      if (!ragProcessor.success || !ragProcessor.result) {
+        // Recovery manager handled the fallback
+        return;
+      }
+
+      const processor = ragProcessor.result;
 
       // Check if RAG should be applied
-      const shouldProcess = await ragProcessor.shouldProcessWithRAG(ragEnabled, ragDocumentIds);
+      const shouldProcess = await processor.shouldProcessWithRAG(ragEnabled, ragDocumentIds);
       
       if (!shouldProcess) {
         // Fall back to normal processing
@@ -52,8 +74,8 @@ export const useRAGChatSession = () => {
         return;
       }
 
-      // Process message with RAG
-      const ragResult = await ragProcessor.processMessage(message.text, {
+      // Process message with RAG (error handling is now built into processMessage)
+      const ragResult = await processor.processMessage(message.text, {
         maxResults: 5,
         minSimilarity: 0.7,
         documentIds: ragDocumentIds,
@@ -73,16 +95,60 @@ export const useRAGChatSession = () => {
             processingTime: ragResult.retrievalContext.processingTime,
           },
           citations: ragResult.citations,
+          fallbackUsed: ragResult.fallbackUsed,
+          errorRecovered: ragResult.errorRecovered,
+          partialResults: ragResult.partialResults,
         },
       };
 
       // Send the enhanced message
       originalHandleSendPress(enhancedMessage);
 
+      // Notify user if fallback was used or errors were recovered
+      if (ragResult.fallbackUsed && onError) {
+        onError(
+          'Document search temporarily unavailable. Continuing with normal chat.',
+          []
+        );
+      } else if (ragResult.errorRecovered && onError) {
+        onError(
+          'Recovered from processing error. Some results may be limited.',
+          []
+        );
+      }
+
     } catch (error) {
-      console.error('RAG processing failed, falling back to normal chat:', error);
-      // Fall back to normal processing on error
-      originalHandleSendPress(message);
+      console.error('RAG processing failed completely:', error);
+      
+      // Use recovery manager for final error handling
+      const finalRecovery = await ragRecoveryManager.recoverFromError(
+        error instanceof Error ? error : new Error('Unknown RAG error'),
+        {
+          operation: 'process_message_with_rag',
+          sessionId: chatSessionStore.activeSession?.id,
+        },
+        {
+          fallbackAction: async () => {
+            originalHandleSendPress(message);
+            return true;
+          },
+        }
+      );
+
+      if (finalRecovery.shouldNotifyUser && onError) {
+        const recoveryActions = ragRecoveryManager.createUserRecoveryActions(
+          error instanceof Error ? error : new Error('Unknown error'),
+          {
+            operation: 'process_message_with_rag',
+            sessionId: chatSessionStore.activeSession?.id,
+          }
+        );
+        
+        onError(
+          finalRecovery.userMessage || 'An error occurred while processing your message.',
+          recoveryActions
+        );
+      }
     }
   }, [createRAGProcessor]);
 
