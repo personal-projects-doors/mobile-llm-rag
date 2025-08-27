@@ -12,19 +12,19 @@ const androidOnlyModels: Model[] = [];
 const crossPlatformModels: Model[] = [
   // -------- Gemma --------
   {
-    id: 'google/medgemma-4b-it-Q2_K_L-GGUF/medgemma-4b-it-Q2_K_L.gguf',
-    author: 'google',
-    name: 'MedGemma-4B-IT (Q2_K_L)',
+    id: 'unsloth/medgemma-4b-it-GGUF/medgemma-4b-it-IQ4_NL.gguf',
+    author: 'unsloth',
+    name: 'MedGemma-4B-IT (IQ4_NL)',
     type: 'Gemma',
     capabilities: ['questionAnswering'],
-    size: 1610612736, // Approximate size for Q2_K_L quantization
+    size: 2400000000, // Approximate size for IQ4_NL quantization
     params: 4000000000, // 4B parameters
     isDownloaded: false,
     downloadUrl:
-      'https://huggingface.co/google/medgemma-4b-it-Q2_K_L-GGUF/resolve/main/medgemma-4b-it-Q2_K_L.gguf',
-    hfUrl: 'https://huggingface.co/google/medgemma-4b-it-Q2_K_L-GGUF',
+      'https://huggingface.co/unsloth/medgemma-4b-it-GGUF/resolve/main/medgemma-4b-it-IQ4_NL.gguf',
+    hfUrl: 'https://huggingface.co/unsloth/medgemma-4b-it-GGUF',
     progress: 0,
-    filename: 'medgemma-4b-it-Q2_K_L.gguf',
+    filename: 'medgemma-4b-it-IQ4_NL.gguf',
     isLocal: false,
     origin: ModelOrigin.PRESET,
     defaultChatTemplate: {...chatTemplates.gemmaIt},
@@ -44,13 +44,13 @@ const crossPlatformModels: Model[] = [
     defaultStopWords: ['<end_of_turn>'],
     stopWords: ['<end_of_turn>'],
     hfModelFile: {
-      rfilename: 'medgemma-4b-it-Q2_K_L.gguf',
-      url: 'https://huggingface.co/google/medgemma-4b-it-Q2_K_L-GGUF/resolve/main/medgemma-4b-it-Q2_K_L.gguf',
-      size: 1610612736,
+      rfilename: 'medgemma-4b-it-IQ4_NL.gguf',
+      url: 'https://huggingface.co/unsloth/medgemma-4b-it-GGUF/resolve/main/medgemma-4b-it-IQ4_NL.gguf',
+      size: 2400000000,
       oid: 'placeholder_oid_for_medgemma',
       lfs: {
         oid: 'placeholder_lfs_oid_for_medgemma',
-        size: 1610612736,
+        size: 2400000000,
         pointerSize: 135,
       },
       canFitInStorage: true,
