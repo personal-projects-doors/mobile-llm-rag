@@ -72,9 +72,9 @@ export class SimilaritySearch {
         throw error;
       }
       throw new SimilaritySearchError(
-        `Search failed: ${error.message}`,
+        `Search failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         SimilaritySearchErrorCodes.PROCESSING_FAILED,
-        error
+        error instanceof Error ? error : undefined
       );
     }
   }
@@ -157,7 +157,7 @@ export class SimilaritySearch {
   private async getEligibleChunks(documentIds?: string[]): Promise<RAGChunk[]> {
     const chunksCollection = this.database.get<RAGChunk>('rag_chunks');
     
-    let queryConditions = [Q.where('embedding', Q.notEq(null))];
+    let queryConditions: any[] = [];
 
     if (documentIds && documentIds.length > 0) {
       queryConditions.push(Q.where('document_id', Q.oneOf(documentIds)));

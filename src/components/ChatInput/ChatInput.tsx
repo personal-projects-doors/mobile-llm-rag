@@ -90,6 +90,12 @@ export interface ChatInputAdditionalProps {
   isThinkingEnabled?: boolean;
   /** Callback when thinking toggle is pressed */
   onThinkingToggle?: (enabled: boolean) => void;
+  /** Whether to show the RAG toggle button */
+  showRAGToggle?: boolean;
+  /** Whether RAG mode is currently enabled */
+  isRAGEnabled?: boolean;
+  /** Callback when RAG toggle is pressed */
+  onRAGToggle?: (enabled: boolean) => void;
 }
 
 export type ChatInputProps = ChatInputTopLevelProps & ChatInputAdditionalProps;
@@ -120,6 +126,9 @@ export const ChatInput = observer(
     showThinkingToggle = false,
     isThinkingEnabled = false,
     onThinkingToggle,
+    showRAGToggle = false,
+    isRAGEnabled = false,
+    onRAGToggle,
   }: ChatInputProps) => {
     const l10n = React.useContext(L10nContext);
     const theme = useTheme();
@@ -553,6 +562,33 @@ export const ChatInput = observer(
                         : {color: onSurfaceColorVariant},
                     ]}>
                     {l10n.components.chatInput.thinkingToggle.thinkText}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* RAG Toggle Button */}
+              {showRAGToggle && !isCameraActive && (
+                <TouchableOpacity
+                  style={[
+                    styles.thinkingToggleLeft,
+                    isRAGEnabled && {backgroundColor: onSurfaceColor},
+                    {borderColor: onSurfaceColorVariant},
+                  ]}
+                  onPress={() => onRAGToggle?.(!isRAGEnabled)}
+                  accessibilityLabel={
+                    isRAGEnabled
+                      ? 'Disable RAG mode'
+                      : 'Enable RAG mode'
+                  }
+                  accessibilityRole="button">
+                  <Text
+                    style={[
+                      styles.thinkingToggleText,
+                      isRAGEnabled
+                        ? {color: inputBackgroundColor}
+                        : {color: onSurfaceColorVariant},
+                    ]}>
+                    RAG
                   </Text>
                 </TouchableOpacity>
               )}

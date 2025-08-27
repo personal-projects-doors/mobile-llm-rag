@@ -1,7 +1,7 @@
 import {appSchema, tableSchema} from '@nozbe/watermelondb';
 
 export default appSchema({
-  version: 2,
+  version: 3,
   tables: [
     tableSchema({
       name: 'chat_sessions',
@@ -9,6 +9,8 @@ export default appSchema({
         {name: 'title', type: 'string'},
         {name: 'date', type: 'string'},
         {name: 'active_pal_id', type: 'string', isOptional: true},
+        {name: 'rag_enabled', type: 'boolean', isOptional: true},
+        {name: 'rag_document_ids', type: 'string', isOptional: true}, // JSON string of document IDs
         {name: 'created_at', type: 'number'},
         {name: 'updated_at', type: 'number'},
       ],

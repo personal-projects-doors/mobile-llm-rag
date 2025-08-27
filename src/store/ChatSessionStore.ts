@@ -19,6 +19,8 @@ export interface SessionMetaData {
   messages: MessageType.Any[];
   completionSettings: CompletionParams;
   activePalId?: string;
+  ragEnabled?: boolean;
+  ragDocumentIds?: string[];
 }
 
 interface SessionGroup {
@@ -50,6 +52,9 @@ class ChatSessionStore {
   isGenerating: boolean = false;
   newChatCompletionSettings: CompletionParams = defaultCompletionSettings;
   newChatPalId: string | undefined = undefined;
+  // RAG settings for new chats
+  newChatRagEnabled: boolean = false;
+  newChatRagDocumentIds: string[] = [];
   // Store localized date group names
   dateGroupNames: typeof DEFAULT_GROUP_NAMES = DEFAULT_GROUP_NAMES;
   // Migration status
@@ -165,6 +170,8 @@ class ChatSessionStore {
           messages,
           completionSettings,
           activePalId: session.activePalId,
+          ragEnabled: session.ragEnabled || false,
+          ragDocumentIds: session.ragDocumentIds ? JSON.parse(session.ragDocumentIds) : [],
         });
       }
 
@@ -219,6 +226,8 @@ class ChatSessionStore {
   resetActiveSession() {
     runInAction(() => {
       this.newChatPalId = this.activePalId;
+      this.newChatRagEnabled = this.activeRagEnabled;
+      this.newChatRagDocumentIds = [...this.activeRagDocumentIds];
       // Do not copy completion settings from session to global settings
       // Instead, preserve global settings as they are
       this.exitEditMode();
@@ -340,6 +349,8 @@ class ChatSessionStore {
         initialMessages,
         completionSettings,
         this.newChatPalId,
+        this.newChatRagEnabled,
+        this.newChatRagDocumentIds,
       );
 
       // Get the full session data
@@ -374,6 +385,13 @@ class ChatSessionStore {
       if (this.newChatPalId) {
         metaData.activePalId = this.newChatPalId;
         this.newChatPalId = undefined;
+      }
+
+      if (this.newChatRagEnabled) {
+        metaData.ragEnabled = this.newChatRagEnabled;
+        metaData.ragDocumentIds = [...this.newChatRagDocumentIds];
+        this.newChatRagEnabled = false;
+        this.newChatRagDocumentIds = [];
       }
 
       await this.updateSessionTitle(metaData);
@@ -704,6 +722,22 @@ class ChatSessionStore {
     return this.newChatPalId;
   }
 
+  get activeRagEnabled(): boolean {
+    if (this.activeSessionId) {
+      const session = this.sessions.find(s => s.id === this.activeSessionId);
+      return session?.ragEnabled || false;
+    }
+    return this.newChatRagEnabled;
+  }
+
+  get activeRagDocumentIds(): string[] {
+    if (this.activeSessionId) {
+      const session = this.sessions.find(s => s.id === this.activeSessionId);
+      return session?.ragDocumentIds || [];
+    }
+    return this.newChatRagDocumentIds;
+  }
+
   async setActivePal(palId: string | undefined): Promise<void> {
     if (this.activeSessionId) {
       const session = this.sessions.find(s => s.id === this.activeSessionId);
@@ -721,6 +755,46 @@ class ChatSessionStore {
       }
     } else {
       this.newChatPalId = palId;
+    }
+  }
+
+  async setRagEnabled(enabled: boolean): Promise<void> {
+    if (this.activeSessionId) {
+      const session = this.sessions.find(s => s.id === this.activeSessionId);
+      if (session) {
+        // Update in database
+        await chatSessionRepository.setSessionRagEnabled(
+          this.activeSessionId,
+          enabled,
+        );
+
+        // Update local state
+        runInAction(() => {
+          session.ragEnabled = enabled;
+        });
+      }
+    } else {
+      this.newChatRagEnabled = enabled;
+    }
+  }
+
+  async setRagDocumentIds(documentIds: string[]): Promise<void> {
+    if (this.activeSessionId) {
+      const session = this.sessions.find(s => s.id === this.activeSessionId);
+      if (session) {
+        // Update in database
+        await chatSessionRepository.setSessionRagDocumentIds(
+          this.activeSessionId,
+          documentIds,
+        );
+
+        // Update local state
+        runInAction(() => {
+          session.ragDocumentIds = [...documentIds];
+        });
+      }
+    } else {
+      this.newChatRagDocumentIds = [...documentIds];
     }
   }
 }

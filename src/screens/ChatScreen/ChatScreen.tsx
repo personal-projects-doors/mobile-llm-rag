@@ -1,12 +1,16 @@
-import React, {useRef, ReactNode} from 'react';
+import React, {useRef, ReactNode, useState, useEffect, useCallback} from 'react';
 
 import {observer} from 'mobx-react';
 
-import {Bubble, ChatView, ErrorSnackbar} from '../../components';
+import {Bubble, ChatView, ErrorSnackbar, RAGSettingsSheet, RAGStatusIndicator} from '../../components';
+import {RAGDocument} from '../../components/RAGDocumentSelector';
 
 import {useChatSession} from '../../hooks';
+import {useRAGChatSession} from '../../hooks/useRAGChatSession';
 
 import {modelStore, chatSessionStore, palStore, uiStore} from '../../store';
+import {database} from '../../database';
+import {RAGMessageProcessor, EmbeddingGenerator} from '../../services/rag';
 
 import {L10nContext} from '../../utils';
 import {MessageType} from '../../utils/types';
@@ -42,8 +46,23 @@ export const ChatScreen: React.FC = observer(() => {
   } | null>(null);
   const l10n = React.useContext(L10nContext);
 
-  const {handleSendPress, handleStopPress, isMultimodalEnabled} =
+  const {handleSendPress: originalHandleSendPress, handleStopPress, isMultimodalEnabled} =
     useChatSession(currentMessageInfo, user, assistant);
+
+  const {processMessageWithRAG} = useRAGChatSession();
+
+  // Enhanced send handler with RAG processing
+  const handleSendPress = useCallback(
+    (message: MessageType.PartialText) => {
+      processMessageWithRAG(message, originalHandleSendPress);
+    },
+    [processMessageWithRAG, originalHandleSendPress]
+  );
+
+  // RAG state
+  const [showRAGSettings, setShowRAGSettings] = useState(false);
+  const [availableDocuments, setAvailableDocuments] = useState<RAGDocument[]>([]);
+  const [ragProcessor, setRagProcessor] = useState<RAGMessageProcessor | null>(null);
 
   // Check if multimodal is enabled
   const [multimodalEnabled, setMultimodalEnabled] = React.useState(false);
@@ -56,6 +75,46 @@ export const ChatScreen: React.FC = observer(() => {
 
     checkMultimodal();
   }, [isMultimodalEnabled]);
+
+  // Initialize RAG processor and load available documents
+  useEffect(() => {
+    const initializeRAG = async () => {
+      try {
+        // Find the medgemma model
+        const medgemmaModel = modelStore.models.find(m => m.id === 'medgemma-4b-it-Q2_K_L');
+        
+        if (!medgemmaModel) {
+          console.warn('medgemma-4b-it-Q2_K_L model not found for RAG');
+          return;
+        }
+
+        // Initialize embedding generator with medgemma model
+        const embeddingGenerator = new EmbeddingGenerator({
+          model: medgemmaModel,
+          config: {
+            batchSize: 1,
+            maxTokens: 512,
+            normalize: true,
+          },
+        });
+
+        // Initialize RAG processor
+        const processor = new RAGMessageProcessor(database, embeddingGenerator);
+        setRagProcessor(processor);
+
+        // Load available documents
+        const documents = await processor.getAvailableDocuments();
+        setAvailableDocuments(documents.map(doc => ({
+          ...doc,
+          formattedSize: undefined, // Will be populated by the document model if needed
+        })));
+      } catch (error) {
+        console.error('Failed to initialize RAG:', error);
+      }
+    };
+
+    initializeRAG();
+  }, []);
 
   const thinkingSupported = modelStore.activeModel?.supportsThinking ?? false;
 
@@ -94,6 +153,24 @@ export const ChatScreen: React.FC = observer(() => {
     }
   };
 
+  // RAG handlers
+  const handleRAGToggle = () => {
+    setShowRAGSettings(true);
+  };
+
+  const handleRAGEnabledChange = async (enabled: boolean) => {
+    await chatSessionStore.setRagEnabled(enabled);
+  };
+
+  const handleDocumentSelectionChange = async (documentIds: string[]) => {
+    await chatSessionStore.setRagDocumentIds(documentIds);
+  };
+
+  // Get current RAG state
+  const ragEnabled = chatSessionStore.activeRagEnabled;
+  const ragDocumentIds = chatSessionStore.activeRagDocumentIds;
+  const hasRAGDocuments = ragDocumentIds.length > 0;
+
   const activePalId = chatSessionStore.activePalId;
   const activePal = activePalId
     ? palStore.pals.find(p => p.id === activePalId)
@@ -120,10 +197,20 @@ export const ChatScreen: React.FC = observer(() => {
         sendButtonVisibilityMode="always"
         showImageUpload={true}
         isVisionEnabled={multimodalEnabled}
+        customContent={
+          <RAGStatusIndicator
+            ragEnabled={ragEnabled && hasRAGDocuments}
+            documentCount={ragDocumentIds.length}
+            onPress={() => setShowRAGSettings(true)}
+          />
+        }
         inputProps={{
           showThinkingToggle: thinkingSupported,
           isThinkingEnabled: thinkingEnabled,
           onThinkingToggle: handleThinkingToggle,
+          showRAGToggle: availableDocuments.length > 0,
+          isRAGEnabled: ragEnabled && hasRAGDocuments,
+          onRAGToggle: handleRAGToggle,
         }}
         textInputProps={{
           editable: !!modelStore.context,
@@ -140,6 +227,16 @@ export const ChatScreen: React.FC = observer(() => {
           onDismiss={() => uiStore.clearChatWarning()}
         />
       )}
+      
+      <RAGSettingsSheet
+        visible={showRAGSettings}
+        onDismiss={() => setShowRAGSettings(false)}
+        ragEnabled={ragEnabled}
+        onRAGEnabledChange={handleRAGEnabledChange}
+        selectedDocumentIds={ragDocumentIds}
+        onDocumentSelectionChange={handleDocumentSelectionChange}
+        availableDocuments={availableDocuments}
+      />
     </>
   );
 });

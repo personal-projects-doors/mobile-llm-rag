@@ -80,9 +80,9 @@ export class RetrievalSystem {
         throw error;
       }
       throw new SimilaritySearchError(
-        `Retrieval failed: ${error.message}`,
+        `Retrieval failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         SimilaritySearchErrorCodes.PROCESSING_FAILED,
-        error
+        error instanceof Error ? error : undefined
       );
     }
   }
@@ -224,7 +224,7 @@ export class RetrievalSystem {
     const [totalDocuments, totalChunks, chunksWithEmbeddings] = await Promise.all([
       documentsCollection.query().fetchCount(),
       chunksCollection.query().fetchCount(),
-      chunksCollection.query(Q.where('embedding', Q.notEq(null))).fetchCount(),
+      chunksCollection.query().fetchCount(),
     ]);
 
     return {

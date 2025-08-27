@@ -219,6 +219,8 @@ class ChatSessionRepository {
     initialMessages: MessageType.Any[] = [],
     completionSettings: CompletionParams = defaultCompletionSettings,
     activePalId?: string,
+    ragEnabled?: boolean,
+    ragDocumentIds?: string[],
   ): Promise<ChatSession> {
     let newSession: any;
 
@@ -231,6 +233,12 @@ class ChatSessionRepository {
           record.date = new Date().toISOString();
           if (activePalId) {
             record.activePalId = activePalId;
+          }
+          if (ragEnabled !== undefined) {
+            record.ragEnabled = ragEnabled;
+          }
+          if (ragDocumentIds && ragDocumentIds.length > 0) {
+            record.ragDocumentIds = JSON.stringify(ragDocumentIds);
           }
         });
 
@@ -518,6 +526,42 @@ class ChatSessionRepository {
     await database.write(async () => {
       await session.update((record: any) => {
         record.activePalId = palId || null;
+      });
+    });
+  }
+
+  // Set RAG enabled for a session
+  async setSessionRagEnabled(sessionId: string, enabled: boolean): Promise<void> {
+    const session = await database.collections
+      .get('chat_sessions')
+      .find(sessionId)
+      .catch(() => null);
+
+    if (!session) {
+      return;
+    }
+
+    await database.write(async () => {
+      await session.update((record: any) => {
+        record.ragEnabled = enabled;
+      });
+    });
+  }
+
+  // Set RAG document IDs for a session
+  async setSessionRagDocumentIds(sessionId: string, documentIds: string[]): Promise<void> {
+    const session = await database.collections
+      .get('chat_sessions')
+      .find(sessionId)
+      .catch(() => null);
+
+    if (!session) {
+      return;
+    }
+
+    await database.write(async () => {
+      await session.update((record: any) => {
+        record.ragDocumentIds = JSON.stringify(documentIds);
       });
     });
   }

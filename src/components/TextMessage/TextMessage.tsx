@@ -20,6 +20,7 @@ import {useTheme} from '../../hooks';
 
 import {styles} from './styles';
 import {MarkdownView} from '../MarkdownView';
+import {RAGCitations} from '../RAGCitations';
 
 import {MessageType} from '../../utils/types';
 import {
@@ -245,6 +246,17 @@ export const TextMessage = ({
             maxMessageWidth={messageWidth}
             selectable={false}
           />
+
+          {/* RAG Citations */}
+          {message.metadata?.citations && (
+            <RAGCitations
+              citations={message.metadata.citations}
+              onViewDocument={(documentId, pageNumber) => {
+                // TODO: Implement document viewer
+                console.log('View document:', documentId, 'page:', pageNumber);
+              }}
+            />
+          )}
 
           {/*Platform.OS === 'ios' ? (
             <TextInput

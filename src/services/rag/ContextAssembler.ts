@@ -63,9 +63,9 @@ export class ContextAssembler {
       };
     } catch (error) {
       throw new SimilaritySearchError(
-        `Context assembly failed: ${error.message}`,
+        `Context assembly failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         SimilaritySearchErrorCodes.PROCESSING_FAILED,
-        error
+        error instanceof Error ? error : undefined
       );
     }
   }

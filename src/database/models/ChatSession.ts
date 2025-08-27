@@ -15,6 +15,8 @@ export default class ChatSession extends Model {
   @text('title') title!: string;
   @text('date') date!: string;
   @text('active_pal_id') activePalId?: string;
+  @field('rag_enabled') ragEnabled?: boolean;
+  @text('rag_document_ids') ragDocumentIds?: string; // JSON string of document IDs
   @field('created_at') createdAt!: number;
   @field('updated_at') updatedAt!: number;
 }

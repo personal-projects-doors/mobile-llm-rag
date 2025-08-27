@@ -1,4 +1,4 @@
-import {schemaMigrations, createTable} from '@nozbe/watermelondb/Schema/migrations';
+import {schemaMigrations, createTable, addColumns} from '@nozbe/watermelondb/Schema/migrations';
 
 export default schemaMigrations({
   migrations: [
@@ -45,6 +45,18 @@ export default schemaMigrations({
             {name: 'preserve_sentences', type: 'boolean'},
             {name: 'created_at', type: 'number'},
             {name: 'updated_at', type: 'number'},
+          ],
+        }),
+      ],
+    },
+    {
+      toVersion: 3,
+      steps: [
+        addColumns({
+          table: 'chat_sessions',
+          columns: [
+            {name: 'rag_enabled', type: 'boolean', isOptional: true},
+            {name: 'rag_document_ids', type: 'string', isOptional: true},
           ],
         }),
       ],

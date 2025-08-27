@@ -61,14 +61,44 @@ export class EmbeddingGenerator {
 
       // Initialize LlamaContext for the embedding model
       this.context = new LlamaContext({
-        model: this.model.fullPath || this.model.filename,
-        n_ctx: 2048, // Context size for embeddings
-        n_batch: this.config.batchSize,
-        embedding: true, // Enable embedding mode
-        n_gpu_layers: 0, // CPU-only for now to ensure compatibility
+        contextId: Math.floor(Math.random() * 1000000),
+        gpu: false,
+        reasonNoGPU: 'Embedding mode uses CPU for compatibility',
+        model: {
+          desc: this.model.name || 'Embedding Model',
+          size: this.model.size || 0,
+          nEmbd: 4096, // Default embedding dimension
+          nParams: 0,
+          chatTemplates: {
+            llamaChat: false,
+            minja: {
+              default: false,
+              defaultCaps: {
+                tools: false,
+                toolCalls: false,
+                toolResponses: false,
+                systemRole: false,
+                parallelToolCalls: false,
+                toolCallId: false,
+              },
+              toolUse: false,
+              toolUseCaps: {
+                tools: false,
+                toolCalls: false,
+                toolResponses: false,
+                systemRole: false,
+                parallelToolCalls: false,
+                toolCallId: false,
+              },
+            },
+          },
+          metadata: {},
+          isChatTemplateSupported: false,
+        },
       });
 
-      await this.context.loadSession();
+      // Load session with empty string as filepath for embedding mode
+      await this.context.loadSession('');
       this.isLoaded = true;
     } catch (error) {
       const embeddingError = new EmbeddingError(
@@ -108,17 +138,23 @@ export class EmbeddingGenerator {
     try {
       // Tokenize the text to check length
       const tokens = await this.context.tokenize(text);
+      const tokenCount = Array.isArray(tokens) ? tokens.length : (tokens.tokens ? tokens.tokens.length : 0);
       
-      if (tokens.length > this.config.maxTokens) {
+      if (tokenCount > this.config.maxTokens) {
         throw new EmbeddingError(
-          `Text too long: ${tokens.length} tokens (max: ${this.config.maxTokens})`,
+          `Text too long: ${tokenCount} tokens (max: ${this.config.maxTokens})`,
           EmbeddingErrorCodes.INVALID_INPUT,
           chunkId
         );
       }
 
       // Generate embedding using the context
-      const embedding = await this.context.getEmbedding(text);
+      const embeddingResult = await this.context.embedding(text);
+      
+      // Extract the actual embedding array from the result
+      const embedding = Array.isArray(embeddingResult) 
+        ? embeddingResult 
+        : (embeddingResult as any)?.embedding || [];
       
       if (!embedding || embedding.length === 0) {
         throw new EmbeddingError(
@@ -137,7 +173,7 @@ export class EmbeddingGenerator {
 
       return {
         embedding: finalEmbedding,
-        tokenCount: tokens.length,
+        tokenCount,
         processingTime,
         chunkId,
       };

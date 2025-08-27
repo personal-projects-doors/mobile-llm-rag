@@ -47,7 +47,7 @@
   - Write unit tests for search accuracy and performance
   - _Requirements: 3.1, 3.5, 5.3_
 
-- [ ] 7. Extend chat system with RAG capabilities
+- [x] 7. Extend chat system with RAG capabilities
   - Add RAG mode toggle to chat interface with visual indicators
   - Extend ChatSessionStore to support RAG-enabled sessions
   - Implement document selection interface for RAG sessions

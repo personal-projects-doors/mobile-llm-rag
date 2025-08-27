@@ -16,7 +16,7 @@ const crossPlatformModels: Model[] = [
     author: 'google',
     name: 'MedGemma-4B-IT (Q2_K_L)',
     type: 'Gemma',
-    capabilities: ['embeddings', 'medical', 'questionAnswering'],
+    capabilities: ['questionAnswering'],
     size: 1610612736, // Approximate size for Q2_K_L quantization
     params: 4000000000, // 4B parameters
     isDownloaded: false,

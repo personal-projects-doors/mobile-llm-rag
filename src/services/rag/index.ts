@@ -5,5 +5,6 @@ export { EmbeddingGenerator } from './EmbeddingGenerator';
 export { SimilaritySearch } from './SimilaritySearch';
 export { ContextAssembler } from './ContextAssembler';
 export { RetrievalSystem } from './RetrievalSystem';
+export { RAGMessageProcessor } from './RAGMessageProcessor';
 export { RAGExample } from './example';
 export * from './types';

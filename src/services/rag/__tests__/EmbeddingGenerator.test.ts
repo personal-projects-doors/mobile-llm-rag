@@ -34,7 +34,7 @@ describe('EmbeddingGenerator', () => {
       author: 'google',
       name: 'MedGemma-4B-IT (Q2_K_L)',
       type: 'Gemma',
-      capabilities: ['embeddings', 'medical', 'questionAnswering'],
+      capabilities: ['questionAnswering'],
       size: 1610612736,
       params: 4000000000,
       isDownloaded: true,

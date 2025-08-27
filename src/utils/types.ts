@@ -109,6 +109,26 @@ export namespace MessageType {
     imageUris?: string[]; // Optional array of image URIs for multimodal messages
   }
 
+  export interface RAGCitation {
+    documentId: string;
+    documentName: string;
+    pageNumber: number;
+    chunkText: string;
+    similarity: number;
+    startChar: number;
+    endChar: number;
+  }
+
+  export interface RAGMetadata {
+    ragEnabled: boolean;
+    retrievalContext?: {
+      query: string;
+      totalChunks: number;
+      processingTime: number;
+    };
+    citations?: RAGCitation[];
+  }
+
   export interface Text extends Base, PartialText {
     type: 'text';
   }

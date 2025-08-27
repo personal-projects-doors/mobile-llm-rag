@@ -375,9 +375,9 @@ describe('RetrievalSystem', () => {
       };
 
       mockDatabase.get.mockImplementation((tableName: string) => {
-        if (tableName === 'rag_documents') return mockDocumentsCollection;
-        if (tableName === 'rag_chunks') return mockChunksCollection;
-        return null;
+        if (tableName === 'rag_documents') return mockDocumentsCollection as any;
+        if (tableName === 'rag_chunks') return mockChunksCollection as any;
+        return mockDocumentsCollection as any; // Return a valid collection for unknown tables
       });
 
       const stats = await retrievalSystem.getStatistics();
@@ -397,9 +397,9 @@ describe('RetrievalSystem', () => {
       };
 
       mockDatabase.get.mockImplementation((tableName: string) => {
-        if (tableName === 'rag_documents') return mockDocumentsCollection;
-        if (tableName === 'rag_chunks') return mockChunksCollection;
-        return null;
+        if (tableName === 'rag_documents') return mockDocumentsCollection as any;
+        if (tableName === 'rag_chunks') return mockChunksCollection as any;
+        return mockDocumentsCollection as any; // Return a valid collection for unknown tables
       });
 
       const stats = await retrievalSystem.getStatistics();
