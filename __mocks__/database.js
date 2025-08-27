@@ -28,9 +28,27 @@ class GlobalSetting {
   static table = 'global_settings';
 }
 
+class RAGDocument {
+  static table = 'rag_documents';
+  static associations = {
+    rag_chunks: {type: 'has_many', foreignKey: 'document_id'},
+  };
+}
+
+class RAGChunk {
+  static table = 'rag_chunks';
+  static associations = {
+    rag_documents: {type: 'belongs_to', key: 'document_id'},
+  };
+}
+
+class RAGSettings {
+  static table = 'rag_settings';
+}
+
 // Mock schema
 const schema = {
-  version: 1,
+  version: 2,
   tables: [
     {
       name: 'chat_sessions',
@@ -72,6 +90,47 @@ const schema = {
         {name: 'updated_at', type: 'number'},
       ],
     },
+    {
+      name: 'rag_documents',
+      columns: [
+        {name: 'name', type: 'string'},
+        {name: 'file_path', type: 'string'},
+        {name: 'size', type: 'number'},
+        {name: 'page_count', type: 'number'},
+        {name: 'processed_at', type: 'number', isOptional: true},
+        {name: 'is_processed', type: 'boolean'},
+        {name: 'chunk_count', type: 'number'},
+        {name: 'is_enabled', type: 'boolean'},
+        {name: 'created_at', type: 'number'},
+        {name: 'updated_at', type: 'number'},
+      ],
+    },
+    {
+      name: 'rag_chunks',
+      columns: [
+        {name: 'document_id', type: 'string', isIndexed: true},
+        {name: 'text', type: 'string'},
+        {name: 'page_number', type: 'number'},
+        {name: 'chunk_index', type: 'number'},
+        {name: 'embedding', type: 'string', isOptional: true},
+        {name: 'start_char', type: 'number'},
+        {name: 'end_char', type: 'number'},
+        {name: 'token_count', type: 'number'},
+        {name: 'created_at', type: 'number'},
+      ],
+    },
+    {
+      name: 'rag_settings',
+      columns: [
+        {name: 'chunk_size', type: 'number'},
+        {name: 'overlap', type: 'number'},
+        {name: 'max_results', type: 'number'},
+        {name: 'min_similarity', type: 'number'},
+        {name: 'preserve_sentences', type: 'boolean'},
+        {name: 'created_at', type: 'number'},
+        {name: 'updated_at', type: 'number'},
+      ],
+    },
   ],
 };
 
@@ -91,8 +150,8 @@ const adapter = {
 // Mock database
 export const database = new Database({
   adapter,
-  modelClasses: [ChatSession, Message, CompletionSetting, GlobalSetting],
+  modelClasses: [ChatSession, Message, CompletionSetting, GlobalSetting, RAGDocument, RAGChunk, RAGSettings],
 });
 
 // Export models
-export {ChatSession, Message, CompletionSetting, GlobalSetting, Q};
+export {ChatSession, Message, CompletionSetting, GlobalSetting, RAGDocument, RAGChunk, RAGSettings, Q};

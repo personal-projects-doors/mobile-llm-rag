@@ -1,13 +1,13 @@
 # Implementation Plan
 
-- [ ] 1. Set up RAG database schema and models
+- [x] 1. Set up RAG database schema and models
   - Create new database tables for RAG documents, chunks, and settings
   - Implement WatermelonDB models for RAGDocument, RAGChunk, and RAGSettings
   - Add database migration to extend existing schema
   - Write unit tests for database models and relationships
   - _Requirements: 6.2, 6.4_
 
-- [ ] 2. Implement PDF processing and text extraction
+- [x] 2. Implement PDF processing and text extraction
   - Install and configure react-native-pdf or similar PDF processing library
   - Create PDFProcessor class to extract text content from PDF files
   - Implement text cleaning and preprocessing utilities
