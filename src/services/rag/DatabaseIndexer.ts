@@ -1,5 +1,8 @@
 import { Database } from '@nozbe/watermelondb';
 import { RAGError, RAGErrorCategory, SearchResult } from './types';
+import RAGChunk from '../../database/models/RAGChunk';
+import RAGDocument from '../../database/models/RAGDocument';
+import { securityManager } from './SecurityManager';
 
 export interface IndexConfig {
   enableVectorIndex: boolean;
@@ -138,16 +141,21 @@ export class DatabaseIndexer {
 
   private async loadAllChunks(): Promise<any[]> {
     try {
-      // This would use the actual WatermelonDB query
-      // For now, simulate loading chunks
-      const chunks = await this.database.get('rag_chunks').query().fetch();
+      // Ensure security manager is initialized for decryption
+      if (!securityManager.isInitialized()) {
+        await securityManager.initialize();
+      }
+
+      const chunksCollection = this.database.get<RAGChunk>('rag_chunks');
+      const chunks = await chunksCollection.query().fetch();
+      
       return chunks.map(chunk => ({
         id: chunk.id,
         documentId: chunk.documentId,
-        text: chunk.text,
+        text: chunk.decryptedText, // Use decrypted text
         pageNumber: chunk.pageNumber,
         chunkIndex: chunk.chunkIndex,
-        embedding: chunk.embedding ? JSON.parse(chunk.embedding) : null,
+        embedding: chunk.embeddingVector, // Use decrypted embedding
         startChar: chunk.startChar,
         endChar: chunk.endChar,
         tokenCount: chunk.tokenCount,
@@ -459,10 +467,11 @@ export class DatabaseIndexer {
 
   private async loadChunkFromDatabase(chunkId: string): Promise<any | null> {
     try {
-      const chunk = await this.database.get('rag_chunks').find(chunkId);
+      const chunksCollection = this.database.get<RAGChunk>('rag_chunks');
+      const chunk = await chunksCollection.find(chunkId);
       return {
         id: chunk.id,
-        text: chunk.text,
+        text: chunk.decryptedText, // Use decrypted text
         documentId: chunk.documentId,
         pageNumber: chunk.pageNumber,
         chunkIndex: chunk.chunkIndex,
@@ -478,7 +487,8 @@ export class DatabaseIndexer {
 
   private async getDocumentName(documentId: string): Promise<string> {
     try {
-      const document = await this.database.get('rag_documents').find(documentId);
+      const documentsCollection = this.database.get<RAGDocument>('rag_documents');
+      const document = await documentsCollection.find(documentId);
       return document.name;
     } catch (error) {
       console.error(`Failed to load document name for ${documentId}:`, error);
@@ -535,7 +545,8 @@ export class DatabaseIndexer {
     
     for (const chunkId of this.searchIndex.vectors.keys()) {
       try {
-        await this.database.get('rag_chunks').find(chunkId);
+        const chunksCollection = this.database.get<RAGChunk>('rag_chunks');
+        await chunksCollection.find(chunkId);
       } catch (error) {
         // Chunk not found in database, mark as orphaned
         orphanedChunks.push(chunkId);

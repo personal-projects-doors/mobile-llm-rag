@@ -1,5 +1,6 @@
 import { LlamaContext } from '@pocketpalai/llama.rn';
 import { Model } from '../../utils/types';
+import { securityManager } from './SecurityManager';
 import {
   EmbeddingConfig,
   EmbeddingResult,
@@ -51,6 +52,13 @@ export class EmbeddingGenerator {
     }
 
     try {
+      // Ensure security manager is initialized for encrypted operations
+      if (!securityManager.isInitialized()) {
+        await securityManager.initialize();
+      }
+
+      // Validate that this is an offline operation
+      securityManager.validateOfflineOperation('embedding_model_initialization');
       // Check if model is downloaded
       if (!this.model.isDownloaded) {
         throw new EmbeddingError(
@@ -132,6 +140,9 @@ export class EmbeddingGenerator {
         chunkId
       );
     }
+
+    // Validate offline operation
+    securityManager.validateOfflineOperation('embedding_generation');
 
     const startTime = Date.now();
 

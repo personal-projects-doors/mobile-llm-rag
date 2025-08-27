@@ -13,6 +13,11 @@ export { PartialProcessor, createPartialProcessor } from './PartialProcessor';
 export { RAGModelManager, ragModelManager } from './RAGModelManager';
 export { RAGExample } from './example';
 
+// Security and privacy components
+export { SecurityManager, securityManager } from './SecurityManager';
+export { SecureDocumentProcessor } from './SecureDocumentProcessor';
+export { DataCleanupService } from './DataCleanupService';
+
 // Performance optimization components
 export { BackgroundProcessor } from './BackgroundProcessor';
 export { MemoryManager } from './MemoryManager';

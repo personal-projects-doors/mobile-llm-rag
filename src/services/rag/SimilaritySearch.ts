@@ -2,6 +2,7 @@ import {Database} from '@nozbe/watermelondb';
 import {Q} from '@nozbe/watermelondb';
 import RAGChunk from '../../database/models/RAGChunk';
 import RAGDocument from '../../database/models/RAGDocument';
+import {securityManager} from './SecurityManager';
 import {
   SearchQuery,
   SearchResult,
@@ -36,6 +37,12 @@ export class SimilaritySearch {
     const startTime = Date.now();
 
     try {
+      // Ensure security manager is initialized and validate offline operation
+      if (!securityManager.isInitialized()) {
+        await securityManager.initialize();
+      }
+      securityManager.validateOfflineOperation('similarity_search');
+
       // Validate query
       this.validateQuery(query);
 
@@ -199,7 +206,7 @@ export class SimilaritySearch {
           chunkId: chunk.id,
           documentId: chunk.documentId,
           documentName: document.name,
-          text: chunk.text,
+          text: chunk.decryptedText, // Use decrypted text for search results
           pageNumber: chunk.pageNumber,
           chunkIndex: chunk.chunkIndex,
           similarity,
