@@ -115,3 +115,57 @@ export enum ChunkingErrorCodes {
   PROCESSING_FAILED = 'PROCESSING_FAILED',
   INVALID_BOUNDARIES = 'INVALID_BOUNDARIES'
 }
+
+// Embedding-related types
+export interface EmbeddingConfig {
+  modelId: string;
+  batchSize: number;
+  maxTokens: number;
+  normalize: boolean;
+}
+
+export interface EmbeddingResult {
+  embedding: number[];
+  tokenCount: number;
+  processingTime: number;
+  chunkId?: string;
+}
+
+export interface BatchEmbeddingResult {
+  results: EmbeddingResult[];
+  totalProcessingTime: number;
+  successCount: number;
+  failureCount: number;
+  errors: EmbeddingError[];
+}
+
+export interface EmbeddingProgress {
+  processed: number;
+  total: number;
+  currentChunk?: string;
+  estimatedTimeRemaining?: number;
+  cancelled: boolean;
+}
+
+export class EmbeddingError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public chunkId?: string,
+    public originalError?: Error
+  ) {
+    super(message);
+    this.name = 'EmbeddingError';
+  }
+}
+
+export enum EmbeddingErrorCodes {
+  MODEL_NOT_LOADED = 'MODEL_NOT_LOADED',
+  MODEL_LOADING_FAILED = 'MODEL_LOADING_FAILED',
+  INVALID_INPUT = 'INVALID_INPUT',
+  PROCESSING_FAILED = 'PROCESSING_FAILED',
+  MEMORY_ERROR = 'MEMORY_ERROR',
+  TIMEOUT = 'TIMEOUT',
+  CANCELLED = 'CANCELLED',
+  BATCH_SIZE_EXCEEDED = 'BATCH_SIZE_EXCEEDED'
+}

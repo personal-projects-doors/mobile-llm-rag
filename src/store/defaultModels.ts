@@ -12,6 +12,51 @@ const androidOnlyModels: Model[] = [];
 const crossPlatformModels: Model[] = [
   // -------- Gemma --------
   {
+    id: 'google/medgemma-4b-it-Q2_K_L-GGUF/medgemma-4b-it-Q2_K_L.gguf',
+    author: 'google',
+    name: 'MedGemma-4B-IT (Q2_K_L)',
+    type: 'Gemma',
+    capabilities: ['embeddings', 'medical', 'questionAnswering'],
+    size: 1610612736, // Approximate size for Q2_K_L quantization
+    params: 4000000000, // 4B parameters
+    isDownloaded: false,
+    downloadUrl:
+      'https://huggingface.co/google/medgemma-4b-it-Q2_K_L-GGUF/resolve/main/medgemma-4b-it-Q2_K_L.gguf',
+    hfUrl: 'https://huggingface.co/google/medgemma-4b-it-Q2_K_L-GGUF',
+    progress: 0,
+    filename: 'medgemma-4b-it-Q2_K_L.gguf',
+    isLocal: false,
+    origin: ModelOrigin.PRESET,
+    defaultChatTemplate: {...chatTemplates.gemmaIt},
+    chatTemplate: chatTemplates.gemmaIt,
+    defaultCompletionSettings: {
+      ...defaultCompletionParams,
+      n_predict: 256, // Shorter for embedding generation
+      temperature: 0.0, // Deterministic for embeddings
+      penalty_repeat: 1.0,
+    },
+    completionSettings: {
+      ...defaultCompletionParams,
+      n_predict: 256,
+      temperature: 0.0,
+      penalty_repeat: 1.0,
+    },
+    defaultStopWords: ['<end_of_turn>'],
+    stopWords: ['<end_of_turn>'],
+    hfModelFile: {
+      rfilename: 'medgemma-4b-it-Q2_K_L.gguf',
+      url: 'https://huggingface.co/google/medgemma-4b-it-Q2_K_L-GGUF/resolve/main/medgemma-4b-it-Q2_K_L.gguf',
+      size: 1610612736,
+      oid: 'placeholder_oid_for_medgemma',
+      lfs: {
+        oid: 'placeholder_lfs_oid_for_medgemma',
+        size: 1610612736,
+        pointerSize: 135,
+      },
+      canFitInStorage: true,
+    },
+  },
+  {
     id: 'bartowski/gemma-2-2b-it-GGUF/gemma-2-2b-it-Q6_K.gguf',
     author: 'bartowski',
     name: 'Gemma-2-2b-it (Q6_K)',

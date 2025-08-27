@@ -23,7 +23,7 @@
   - Write unit tests for chunking algorithm validation
   - _Requirements: 5.1, 7.1_
 
-- [ ] 4. Integrate medgemma-4b-it-Q2_K_L model for embeddings
+- [x] 4. Integrate medgemma-4b-it-Q2_K_L model for embeddings
   - Add medgemma-4b-it-Q2_K_L model to the default models list
   - Create EmbeddingGenerator class to interface with the model
   - Implement batch processing for efficient embedding generation
