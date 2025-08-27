@@ -10,6 +10,7 @@ export { CitationManager, citationManager } from './CitationManager';
 export { RAGErrorHandler, ragErrorHandler } from './ErrorHandler';
 export { RAGRecoveryManager, ragRecoveryManager } from './RecoveryManager';
 export { PartialProcessor, createPartialProcessor } from './PartialProcessor';
+export { RAGModelManager, ragModelManager } from './RAGModelManager';
 export { RAGExample } from './example';
 
 // Performance optimization components

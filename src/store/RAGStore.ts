@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {database} from '../database';
 import {RAGSettings, RAGSettingsConfig, DEFAULT_RAG_SETTINGS} from '../database/models/RAGSettings';
+import {ragModelManager, RAGModelConfig} from '../services/rag/RAGModelManager';
 
 // Settings version for migration tracking
 const CURRENT_SETTINGS_VERSION = 1;
@@ -13,9 +14,17 @@ export class RAGStore {
   // Current settings configuration
   settings: RAGSettingsConfig = {...DEFAULT_RAG_SETTINGS};
   
+  // Model configuration
+  modelConfig: RAGModelConfig = {
+    embeddingModelId: 'unsloth/medgemma-4b-it-GGUF/medgemma-4b-it-IQ4_NL.gguf',
+    autoLoadEmbeddingModel: true,
+    concurrentModelUsage: true,
+  };
+  
   // Loading states
   isLoading = false;
   isInitialized = false;
+  isModelManagerInitialized = false;
   
   // Error state
   error: string | null = null;
@@ -27,7 +36,7 @@ export class RAGStore {
     makeAutoObservable(this);
     makePersistable(this, {
       name: 'RAGStore',
-      properties: ['settings', 'migrationCompleted'],
+      properties: ['settings', 'modelConfig', 'migrationCompleted'],
       storage: AsyncStorage,
     });
   }
@@ -57,6 +66,9 @@ export class RAGStore {
         // Create default settings in database
         await this.createDefaultSettings();
       }
+
+      // Initialize model manager
+      await this.initializeModelManager();
       
       runInAction(() => {
         this.isInitialized = true;
@@ -68,6 +80,29 @@ export class RAGStore {
     } finally {
       runInAction(() => {
         this.isLoading = false;
+      });
+    }
+  }
+
+  // Initialize the RAG model manager
+  async initializeModelManager() {
+    if (this.isModelManagerInitialized) return;
+
+    try {
+      // Update model manager configuration
+      ragModelManager.updateConfig(this.modelConfig);
+      
+      // Initialize the model manager
+      await ragModelManager.initialize();
+      
+      runInAction(() => {
+        this.isModelManagerInitialized = true;
+      });
+    } catch (error) {
+      console.error('Failed to initialize RAG model manager:', error);
+      // Don't throw here to avoid blocking the main RAG store initialization
+      runInAction(() => {
+        this.error = error instanceof Error ? error.message : 'Failed to initialize RAG model manager';
       });
     }
   }
@@ -327,6 +362,142 @@ export class RAGStore {
   get migrationStatus(): 'pending' | 'completed' | 'not_needed' {
     if (!this.isInitialized) return 'pending';
     return this.migrationCompleted ? 'completed' : 'not_needed';
+  }
+
+  // Model management methods
+  
+  /**
+   * Check if the embedding model is available and ready
+   */
+  isEmbeddingModelReady(): boolean {
+    return ragModelManager.isEmbeddingModelAvailable() && ragModelManager.isEmbeddingModelLoaded;
+  }
+
+  /**
+   * Load the embedding model for RAG operations
+   */
+  async loadEmbeddingModel(): Promise<void> {
+    if (!this.isModelManagerInitialized) {
+      await this.initializeModelManager();
+    }
+    
+    await ragModelManager.loadEmbeddingModel();
+  }
+
+  /**
+   * Enable RAG mode with concurrent model usage
+   */
+  async enableRAGMode(chatModelId?: string): Promise<void> {
+    if (!this.isModelManagerInitialized) {
+      await this.initializeModelManager();
+    }
+
+    // Auto-load embedding model for RAG session
+    await ragModelManager.autoLoadForRAGSession();
+
+    // Enable concurrent mode if chat model is specified
+    if (chatModelId && this.modelConfig.concurrentModelUsage) {
+      await ragModelManager.enableConcurrentMode(chatModelId);
+    }
+  }
+
+  /**
+   * Disable RAG mode and clean up resources
+   */
+  async disableRAGMode(): Promise<void> {
+    if (ragModelManager.isConcurrentModeActive) {
+      await ragModelManager.disableConcurrentMode();
+    }
+  }
+
+  /**
+   * Switch to embedding generation mode
+   */
+  async switchToEmbeddingMode(): Promise<void> {
+    await ragModelManager.switchToEmbeddingMode();
+  }
+
+  /**
+   * Switch to chat generation mode
+   */
+  async switchToChatMode(modelId?: string): Promise<void> {
+    await ragModelManager.switchToChatMode(modelId);
+  }
+
+  /**
+   * Check if a model is compatible with RAG
+   */
+  checkModelCompatibility(modelId: string) {
+    const model = ragModelManager.chatModel || 
+      (typeof modelStore !== 'undefined' ? modelStore.models.find(m => m.id === modelId) : null);
+    
+    if (!model) {
+      return {
+        isCompatible: false,
+        reason: 'Model not found',
+      };
+    }
+
+    return ragModelManager.checkModelCompatibility(model);
+  }
+
+  /**
+   * Update model configuration
+   */
+  async updateModelConfig(newConfig: Partial<RAGModelConfig>): Promise<void> {
+    runInAction(() => {
+      this.modelConfig = {...this.modelConfig, ...newConfig};
+    });
+
+    // Update the model manager configuration
+    ragModelManager.updateConfig(this.modelConfig);
+  }
+
+  /**
+   * Get embedding generator instance
+   */
+  getEmbeddingGenerator() {
+    return ragModelManager.getEmbeddingGenerator();
+  }
+
+  /**
+   * Get model manager status
+   */
+  getModelStatus() {
+    return ragModelManager.getStatus();
+  }
+
+  /**
+   * Clear model manager errors
+   */
+  clearModelError(): void {
+    ragModelManager.clearError();
+  }
+
+  // Getters for model configuration
+  get embeddingModelId() {
+    return this.modelConfig.embeddingModelId;
+  }
+
+  get autoLoadEmbeddingModel() {
+    return this.modelConfig.autoLoadEmbeddingModel;
+  }
+
+  get concurrentModelUsage() {
+    return this.modelConfig.concurrentModelUsage;
+  }
+
+  // Individual model config updates
+  async setEmbeddingModelId(modelId: string) {
+    await this.updateModelConfig({embeddingModelId: modelId});
+  }
+
+  async setAutoLoadEmbeddingModel(value: boolean) {
+    await this.updateModelConfig({autoLoadEmbeddingModel: value});
+  }
+
+  async setConcurrentModelUsage(value: boolean) {
+    await this.updateModelConfig({concurrentModelUsage: value});
   }
 }
 

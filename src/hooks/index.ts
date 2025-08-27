@@ -6,3 +6,4 @@ export * from './useMessageActions';
 export * from './useMoveScroll';
 export * from './useStorageCheck';
 export * from './useRAGChatSession';
+export * from './useRAGModels';

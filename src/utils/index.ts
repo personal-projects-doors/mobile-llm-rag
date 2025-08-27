@@ -759,4 +759,5 @@ export * from './fb';
 export * from './formatters';
 export * from './multimodalHelpers';
 export * from './network';
+export * from './ragModelUtils';
 export * from './types';
