@@ -62,11 +62,42 @@ export const createStyles = ({theme}: StyleProps) =>
       flex: 1,
       marginTop: 8,
     },
+    divider: {
+      marginHorizontal: 24,
+    },
+    performanceSection: {
+      padding: 24,
+      paddingTop: 16,
+      paddingBottom: 16,
+    },
+    sectionTitle: {
+      color: theme.colors.onSurface,
+      marginBottom: 12,
+      fontWeight: '500',
+    },
+    performanceContainer: {
+      alignItems: 'center',
+    },
+    performanceChipContainer: {
+      marginBottom: 8,
+    },
+    performanceChip: {
+      fontWeight: 'bold',
+      fontSize: 12,
+    },
+    performanceDescription: {
+      color: theme.colors.onSurfaceVariant,
+      textAlign: 'center',
+    },
     footer: {
       padding: 24,
       paddingTop: 16,
       borderTopWidth: 1,
       borderTopColor: theme.colors.outline,
+      gap: 12,
+    },
+    advancedButton: {
+      width: '100%',
     },
     doneButton: {
       width: '100%',

@@ -1,11 +1,12 @@
 import React from 'react';
 import {View} from 'react-native';
-import {Text, Switch, Button} from 'react-native-paper';
+import {Text, Switch, Button, Chip, Divider} from 'react-native-paper';
 import {observer} from 'mobx-react';
 
 import {Sheet} from '../Sheet';
 import {RAGDocumentSelector, RAGDocument} from '../RAGDocumentSelector';
 import {useTheme} from '../../hooks';
+import {ragStore} from '../../store';
 import {createStyles} from './styles';
 
 export interface RAGSettingsSheetProps {
@@ -17,6 +18,7 @@ export interface RAGSettingsSheetProps {
   onDocumentSelectionChange: (documentIds: string[]) => void;
   availableDocuments: RAGDocument[];
   isLoading?: boolean;
+  onOpenAdvancedSettings?: () => void;
 }
 
 export const RAGSettingsSheet: React.FC<RAGSettingsSheetProps> = observer(
@@ -29,6 +31,7 @@ export const RAGSettingsSheet: React.FC<RAGSettingsSheetProps> = observer(
     onDocumentSelectionChange,
     availableDocuments,
     isLoading = false,
+    onOpenAdvancedSettings,
   }) => {
     const theme = useTheme();
     const styles = createStyles({theme});
@@ -44,6 +47,25 @@ export const RAGSettingsSheet: React.FC<RAGSettingsSheetProps> = observer(
     };
 
     const canEnableRAG = availableDocuments.some(doc => doc.isProcessed && doc.chunkCount > 0);
+    
+    // Initialize RAG store if not already done
+    React.useEffect(() => {
+      if (!ragStore.isInitialized) {
+        ragStore.initialize();
+      }
+    }, []);
+
+    const performanceImpact = ragStore.getPerformanceImpact();
+    const getPerformanceColor = (impact: 'low' | 'medium' | 'high') => {
+      switch (impact) {
+        case 'low':
+          return theme.colors.primary;
+        case 'medium':
+          return theme.colors.tertiary;
+        case 'high':
+          return theme.colors.error;
+      }
+    };
 
     return (
       <Sheet isVisible={visible} onDismiss={onDismiss}>
@@ -83,20 +105,55 @@ export const RAGSettingsSheet: React.FC<RAGSettingsSheetProps> = observer(
               </View>
             )}
 
+            {/* Performance Impact Indicator */}
+            {ragEnabled && (
+              <>
+                <Divider style={styles.divider} />
+                <View style={styles.performanceSection}>
+                  <Text variant="titleSmall" style={styles.sectionTitle}>
+                    Current Performance Impact
+                  </Text>
+                  <View style={styles.performanceContainer}>
+                    <Chip
+                      mode="outlined"
+                      textStyle={[styles.performanceChip, {color: getPerformanceColor(performanceImpact)}]}
+                      style={[styles.performanceChipContainer, {borderColor: getPerformanceColor(performanceImpact)}]}>
+                      {performanceImpact.toUpperCase()}
+                    </Chip>
+                    <Text variant="bodySmall" style={styles.performanceDescription}>
+                      Chunk Size: {ragStore.chunkSize} • Max Results: {ragStore.maxResults}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            )}
+
             {/* Document Selection */}
             {ragEnabled && canEnableRAG && (
-              <View style={styles.documentSection}>
-                <RAGDocumentSelector
-                  documents={availableDocuments}
-                  selectedDocumentIds={selectedDocumentIds}
-                  onSelectionChange={onDocumentSelectionChange}
-                  maxSelections={5}
-                />
-              </View>
+              <>
+                <Divider style={styles.divider} />
+                <View style={styles.documentSection}>
+                  <RAGDocumentSelector
+                    documents={availableDocuments}
+                    selectedDocumentIds={selectedDocumentIds}
+                    onSelectionChange={onDocumentSelectionChange}
+                    maxSelections={5}
+                  />
+                </View>
+              </>
             )}
           </View>
 
           <View style={styles.footer}>
+            {onOpenAdvancedSettings && (
+              <Button
+                mode="outlined"
+                onPress={onOpenAdvancedSettings}
+                style={styles.advancedButton}
+                icon="cog">
+                Advanced Settings
+              </Button>
+            )}
             <Button
               mode="contained"
               onPress={onDismiss}
