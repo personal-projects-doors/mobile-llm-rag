@@ -4,6 +4,7 @@ export const ROUTES = {
   CHAT: 'Chat',
   MODELS: 'Models',
   DOCUMENTS: 'Documents',
+  ANATOMY_SEARCH: 'Anatomy Search',
   PALS: 'Pals (experimental)',
   BENCHMARK: 'Benchmark',
   SETTINGS: 'Settings',

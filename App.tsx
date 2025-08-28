@@ -38,6 +38,7 @@ import {
   BenchmarkScreen,
   AboutScreen,
   PalsScreen,
+  AnatomySearchScreen,
 
   // Dev tools screen. Only available in debug mode.
   DevToolsScreen,
@@ -105,6 +106,14 @@ const App = observer(() => {
                       options={{
                         headerStyle: styles.headerWithoutDivider,
                         title: 'Documents',
+                      }}
+                    />
+                    <Drawer.Screen
+                      name={ROUTES.ANATOMY_SEARCH}
+                      component={gestureHandlerRootHOC(AnatomySearchScreen)}
+                      options={{
+                        headerStyle: styles.headerWithoutDivider,
+                        title: 'Anatomy Search',
                       }}
                     />
                     <Drawer.Screen

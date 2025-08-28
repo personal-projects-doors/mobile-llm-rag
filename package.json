@@ -20,7 +20,9 @@
     "format": "prettier --write \"**/*.{js,ts,tsx,json,md}\"",
     "start": "react-native start",
     "start:reset": "react-native start --reset-cache",
-    "test": "jest"
+    "test": "jest",
+    "setup:vectors": "./scripts/setup_vectors.sh",
+    "extract:vectors": "python3 scripts/extract_vectors.py"
   },
   "dependencies": {
     "@dr.pogodin/react-native-fs": "2.30.3",

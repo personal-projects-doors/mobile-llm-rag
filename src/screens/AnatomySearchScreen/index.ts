@@ -1,0 +1,1 @@
+export { AnatomySearchScreen } from './AnatomySearchScreen';

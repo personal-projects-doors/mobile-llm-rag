@@ -1,4 +1,5 @@
 export * from './AboutScreen';
+export * from './AnatomySearchScreen';
 export * from './BenchmarkScreen';
 export * from './ChatScreen';
 export * from './DocumentManagerScreen';
