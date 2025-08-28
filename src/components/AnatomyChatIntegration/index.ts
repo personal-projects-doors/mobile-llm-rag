@@ -1,0 +1,1 @@
+export { AnatomyChatIntegration } from './AnatomyChatIntegration';

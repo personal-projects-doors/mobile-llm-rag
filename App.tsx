@@ -39,6 +39,7 @@ import {
   AboutScreen,
   PalsScreen,
   AnatomySearchScreen,
+  AnatomyQAScreen,
 
   // Dev tools screen. Only available in debug mode.
   DevToolsScreen,
@@ -114,6 +115,14 @@ const App = observer(() => {
                       options={{
                         headerStyle: styles.headerWithoutDivider,
                         title: 'Anatomy Search',
+                      }}
+                    />
+                    <Drawer.Screen
+                      name={ROUTES.ANATOMY_QA}
+                      component={gestureHandlerRootHOC(AnatomyQAScreen)}
+                      options={{
+                        headerStyle: styles.headerWithoutDivider,
+                        title: 'Anatomy Q&A',
                       }}
                     />
                     <Drawer.Screen
