@@ -5,6 +5,7 @@ export const ROUTES = {
   MODELS: 'Models',
   DOCUMENTS: 'Documents',
   ANATOMY_SEARCH: 'Anatomy Search',
+  ANATOMY_QA: 'Anatomy Q&A',
   PALS: 'Pals (experimental)',
   BENCHMARK: 'Benchmark',
   SETTINGS: 'Settings',

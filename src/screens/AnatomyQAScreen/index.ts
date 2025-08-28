@@ -1,0 +1,1 @@
+export { AnatomyQAScreen } from './AnatomyQAScreen';

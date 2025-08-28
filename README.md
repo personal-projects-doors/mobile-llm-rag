@@ -336,3 +336,7 @@ And many other open source libraries that make this project possible!
 ---
 
 Happy exploring! 🚀📱✨
+
+Compile Vectors
+source scripts/venv/bin/activate 
+python3 scripts/extract_vectors.py

@@ -76,3 +76,4 @@ ios/GoogleService-Info.plist
 .env
 .env.*
 !.env.example
+*.gguf
